@@ -37,6 +37,15 @@
   - `docs/hermes-agent-integration.md` 分析文件
   - `provisioner.js` 加入 `agentType: 'hermes'` 支援
 
+## 📊 2026-04-14 16:42 — Langfuse Observability 部署啟動
+- **Commit**: 8665ce2
+- **內容**:
+  - 發現 Langfuse v3（最新）強制需 ClickHouse，與既有 PostgreSQL 不相容
+  - 調整 docker-compose.yml：`langfuse/langfuse:latest` → `langfuse/langfuse:2`
+  - Langfuse v2.95.11 成功啟動，監聽 `http://localhost:3002`
+  - 健康檢查通過：`{"status":"OK","version":"2.95.11"}`
+  - 下一步：驗證 LiteLLM OpenTelemetry 追蹤是否正確報送至 Langfuse
+
 ## 📊 過往記錄
 
 ## 2026-04-13 14:40 — Phase 0 完成 + 部署自動化解決
