@@ -154,7 +154,7 @@ docker compose logs -f litellm-proxy
 
 - 📖 完整 API 文件：http://localhost:3210/docs
 - 📋 管理員操作手冊：見 `docs/ADMIN_MANUAL.md`
-- 🔧 故障排除：見 `docs/TROUBLESHOOTING.md`（即將提供）
+- 🔧 故障排除：見 `docs/TROUBLESHOOTING.md` ✅
 - 🧑‍💻 進入用戶容器：`docker exec -it <container_name> bash`
 
 ---
