@@ -16,7 +16,6 @@ let _refreshInterval = null;
 let _dashboardItems = [];
 let _dashboardSummary = null;
 
-const { showToast, escHtml } = window.OpenClawApp;
 
 async function initAdminPanel() {
   if (!getAdminAPI().isLoggedIn()) {
@@ -104,7 +103,7 @@ async function loadDashboard(force = false) {
     renderTable();
   } catch (err) {
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="6" style="color:var(--error); text-align:center; padding:32px;">${escHtml(err.message)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="color:var(--error); text-align:center; padding:32px;">${window.OpenClawApp.escHtml(err.message)}</td></tr>`;
     }
   }
 }
@@ -142,9 +141,9 @@ function renderSummary(summary) {
 
   root.innerHTML = cards.map(([label, value, sub]) => `
     <div class="summary-card">
-      <div class="summary-label">${escHtml(label)}</div>
-      <div class="summary-value">${escHtml(value)}</div>
-      <div class="summary-sub">${escHtml(sub)}</div>
+      <div class="summary-label">${window.OpenClawApp.escHtml(label)}</div>
+      <div class="summary-value">${window.OpenClawApp.escHtml(value)}</div>
+      <div class="summary-sub">${window.OpenClawApp.escHtml(sub)}</div>
     </div>
   `).join('');
 }
@@ -165,8 +164,8 @@ function renderAlerts(alerts) {
     <div class="alert-item">
       ${healthBadge(alert.severity, alert.severity.toUpperCase())}
       <div>
-        <div class="alert-title">${escHtml(alert.title)}</div>
-        <div class="alert-detail">${escHtml(alert.detail || alert.agentId || '')}</div>
+        <div class="alert-title">${window.OpenClawApp.escHtml(alert.title)}</div>
+        <div class="alert-detail">${window.OpenClawApp.escHtml(alert.detail || alert.agentId || '')}</div>
       </div>
       ${alert.instanceId ? `<a class="btn-sm btn-secondary" href="/admin/instance.html?id=${alert.instanceId}">查看</a>` : ''}
     </div>
@@ -195,18 +194,18 @@ function renderInstanceRow(item) {
   return `
     <tr data-instance-id="${item.id}">
       <td data-label="實例">
-        <div style="font-weight:600; color:inherit;">${escHtml(item.userNickname)} <span style="color:var(--text-muted);font-weight:400;font-size:0.9em;">/ ${escHtml(item.botNickname)}</span></div>
-        <div class="meta-text mono">${escHtml(item.agentId)}</div>
-        ${item.containerName ? `<div class="meta-text mono">${escHtml(item.containerName)}</div>` : ''}
-        ${item.port ? `<div class="meta-text">Port: ${escHtml(item.port)}</div>` : ''}
+        <div style="font-weight:600; color:inherit;">${window.OpenClawApp.escHtml(item.userNickname)} <span style="color:var(--text-muted);font-weight:400;font-size:0.9em;">/ ${window.OpenClawApp.escHtml(item.botNickname)}</span></div>
+        <div class="meta-text mono">${window.OpenClawApp.escHtml(item.agentId)}</div>
+        ${item.containerName ? `<div class="meta-text mono">${window.OpenClawApp.escHtml(item.containerName)}</div>` : ''}
+        ${item.port ? `<div class="meta-text">Port: ${window.OpenClawApp.escHtml(item.port)}</div>` : ''}
       </td>
 
       <td data-label="生命週期 / Runtime">
-        <div class="status-text"><span class="status-dot ${status.dotClass}"></span>${escHtml(status.label)}</div>
+        <div class="status-text"><span class="status-dot ${status.dotClass}"></span>${window.OpenClawApp.escHtml(status.label)}</div>
         <div class="meta-text">Docker：${item.runtime?.containerRunning ? 'running' : 'stopped'}</div>
         <div class="meta-text">Gateway：${item.runtime?.gatewayResponding ? 'responding' : 'down'}</div>
-        ${item.runtime?.cpuPercent != null ? `<div class="meta-text">CPU ${escHtml(item.runtime.cpuPercent)}%</div>` : ''}
-        ${item.runtime?.memUsageText ? `<div class="meta-text">Mem ${escHtml(item.runtime.memUsageText)}</div>` : ''}
+        ${item.runtime?.cpuPercent != null ? `<div class="meta-text">CPU ${window.OpenClawApp.escHtml(item.runtime.cpuPercent)}%</div>` : ''}
+        ${item.runtime?.memUsageText ? `<div class="meta-text">Mem ${window.OpenClawApp.escHtml(item.runtime.memUsageText)}</div>` : ''}
       </td>
 
       <td data-label="健康訊號">
@@ -227,8 +226,8 @@ function renderInstanceRow(item) {
         </div>
         <div class="progress-wrap">
           <div class="progress-label">
-            <span>${escHtml(formatCurrency(item.billing?.spend || 0))}</span>
-            <span>/ ${escHtml(formatCurrency(item.billing?.budget || 0))}</span>
+            <span>${window.OpenClawApp.escHtml(formatCurrency(item.billing?.spend || 0))}</span>
+            <span>/ ${window.OpenClawApp.escHtml(formatCurrency(item.billing?.budget || 0))}</span>
           </div>
           <div class="progress-bar"><div class="progress-fill ${progressClass}" style="width:${budgetRatio * 100}%"></div></div>
           <div class="meta-text">${item.billing?.ratio == null ? '—' : `${Math.round(item.billing.ratio * 100)}% 已使用`}</div>
@@ -240,10 +239,10 @@ function renderInstanceRow(item) {
       </td>
 
       <td data-label="活動">
-        <div>${escHtml(activityLabel)}</div>
+        <div>${window.OpenClawApp.escHtml(activityLabel)}</div>
         <div class="meta-text">Cron：${item.openclaw?.cron?.enabled ?? 0}/${item.openclaw?.cron?.total ?? 0} enabled</div>
         <div class="meta-text">24h sessions：${item.openclaw?.sessions?.count24h ?? 0}</div>
-        ${item.runtime?.restartCount != null ? `<div class="meta-text">Restarts：${escHtml(item.runtime.restartCount)}</div>` : ''}
+        ${item.runtime?.restartCount != null ? `<div class="meta-text">Restarts：${window.OpenClawApp.escHtml(item.runtime.restartCount)}</div>` : ''}
       </td>
 
       <td data-label="操作">
@@ -252,7 +251,7 @@ function renderInstanceRow(item) {
           ${buildActionButtons(item)}
           <button class="btn-sm btn-secondary" onclick="AdminInstances.showAuthStatus(${item.id})">Auth</button>
           ${item.auth?.mode === 'codex-cli' ? `<button class="btn-sm btn-secondary" onclick="AdminInstances.resetCodex(${item.id})">Reset Codex</button>` : ''}
-          <button class="btn-sm btn-stop" onclick="AdminInstances.deleteInstance(${item.id}, '${escHtml(item.botNickname).replace(/'/g, "\\'")}')">🗑 刪除</button>
+          <button class="btn-sm btn-stop" onclick="AdminInstances.deleteInstance(${item.id}, '${window.OpenClawApp.escHtml(item.botNickname).replace(/'/g, "\\'")}')">🗑 刪除</button>
         </div>
       </td>
     </tr>
@@ -273,7 +272,7 @@ function buildActionButtons(item) {
 
 function healthBadge(level, label) {
   const normalized = level || 'unknown';
-  return `<span class="badge badge-${normalized}">${escHtml(label)}</span>`;
+  return `<span class="badge badge-${normalized}">${window.OpenClawApp.escHtml(label)}</span>`;
 }
 
 function formatCurrency(value) {
@@ -292,20 +291,20 @@ const AdminInstances = {
     const input = document.getElementById(`budget-${id}`);
     if (!input) return;
     const val = parseFloat(input.value);
-    if (isNaN(val) || val < 1) return showToast('請輸入有效的預算金額（≥ 1）');
+    if (isNaN(val) || val < 1) return window.OpenClawApp.showToast('請輸入有效的預算金額（≥ 1）');
     try {
       await getAdminAPI().setBudget(id, val);
-      showToast('預算已更新');
+      window.OpenClawApp.showToast('預算已更新');
       await loadDashboard(true);
     } catch (err) {
-      showToast(err.message);
+      window.OpenClawApp.showToast(err.message);
     }
   },
 
   async activate(id, btn) {
     await withBusyButton(btn, '處理中...', async () => {
       await getAdminAPI().activate(id);
-      showToast('容器建立成功');
+      window.OpenClawApp.showToast('容器建立成功');
       await loadDashboard(true);
     }, '🚀 建立容器');
   },
@@ -313,7 +312,7 @@ const AdminInstances = {
   async start(id, btn) {
     await withBusyButton(btn, '啟動中...', async () => {
       await getAdminAPI().start(id);
-      showToast('啟動成功');
+      window.OpenClawApp.showToast('啟動成功');
       await loadDashboard(true);
     }, '▶ 啟動');
   },
@@ -321,7 +320,7 @@ const AdminInstances = {
   async stop(id, btn) {
     await withBusyButton(btn, '停用中...', async () => {
       await getAdminAPI().stop(id);
-      showToast('已停用');
+      window.OpenClawApp.showToast('已停用');
       await loadDashboard(true);
     }, '⏸ 停用');
   },
@@ -338,7 +337,7 @@ const AdminInstances = {
         `${auth.summary || ''}`
       );
     } catch (err) {
-      showToast(err.message);
+      window.OpenClawApp.showToast(err.message);
     }
   },
 
@@ -347,10 +346,10 @@ const AdminInstances = {
     if (!ok) return;
     try {
       await getAdminAPI().resetCodexAuth(id);
-      showToast('Codex 授權已重置');
+      window.OpenClawApp.showToast('Codex 授權已重置');
       await loadDashboard(true);
     } catch (err) {
-      showToast(err.message);
+      window.OpenClawApp.showToast(err.message);
     }
   },
 
@@ -359,10 +358,10 @@ const AdminInstances = {
     if (!ok) return;
     try {
       await getAdminAPI().deleteInstance(id);
-      showToast('實例已刪除');
+      window.OpenClawApp.showToast('實例已刪除');
       await loadDashboard(true);
     } catch (err) {
-      showToast(err.message);
+      window.OpenClawApp.showToast(err.message);
     }
   },
 };
@@ -376,7 +375,7 @@ async function withBusyButton(btn, busyText, fn, doneText) {
   try {
     await fn();
   } catch (err) {
-    showToast(err.message);
+    window.OpenClawApp.showToast(err.message);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = doneText || btn.dataset.original || '完成'; }
   }
