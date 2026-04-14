@@ -2,25 +2,25 @@ model_list:
   - model_name: openai/gpt-5.4
     litellm_params:
       model: gpt-4o
-      api_key: os.ENV/OPENAI_API_KEY
+      api_key: os.environ/OPENAI_API_KEY
   - model_name: openai/gpt-4.1-mini
     litellm_params:
       model: gpt-4o-mini
-      api_key: os.ENV/OPENAI_API_KEY
+      api_key: os.environ/OPENAI_API_KEY
 
   - model_name: minimax-cn/MiniMax-M2.7
     litellm_params:
       model: minimax/MiniMax-M1
-      api_key: os.ENV/MINIMAX_API_KEY
+      api_key: os.environ/MINIMAX_API_KEY
 
   - model_name: minimax-cn/MiniMax-VL-01
     litellm_params:
       model: minimax/MiniMax-VL-01
-      api_key: os.ENV/MINIMAX_API_KEY
+      api_key: os.environ/MINIMAX_API_KEY
 
 litellm_settings:
-  master_key: os.ENV/LITELLM_MASTER_KEY
-  database_url: os.ENV/DATABASE_URL
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
 
 # OpenTelemetry Tracing → Langfuse
 # Auth headers are set via OTEL_EXPORTER_OTLP_HEADERS env var in docker-compose.yml

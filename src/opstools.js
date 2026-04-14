@@ -190,7 +190,147 @@ async function cmdBudget(agentId) {
   }
 }
 
-// 5. user-add — 新增用戶
+// 5. litellm — 詳細 LiteLLM 狀態（模型可用性 + OTEL 追蹤配置）
+async function cmdLitellm() {
+  const LITELLM_KEY = process.env.LITELLM_MASTER_KEY || 'sk-1234';
+  const LITELLM_URL = 'http://localhost:4000';
+
+  console.log(`\n🔧 LiteLLM Proxy 詳細狀態\n`);
+
+  // 1. 健康檢查
+  let healthOk = false;
+  try {
+    const res = await fetch(`${LITELLM_URL}/health`, {
+      headers: { 'Authorization': `Bearer ${LITELLM_KEY}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const healthy = (data.healthy_endpoints || []).length;
+      const unhealthy = (data.unhealthy_endpoints || []).length;
+      healthOk = healthy > 0;
+      console.log(`  健康狀態：${healthy > 0 ? '✅ ' + healthy + ' 个端点正常' : '⚠️ 无健康端点'}`);
+      if (unhealthy > 0) {
+        console.log(`  异常端点：⚠️ ${unhealthy} 个（API Key 错误或服务商不可达）`);
+        // 顯示第一個異常的錯誤摘要
+        const firstErr = data.unhealthy_endpoints[0];
+        if (firstErr?.metadata?.error_information?.error_message) {
+          const msg = firstErr.metadata.error_information.error_message;
+          // 脫敏關鍵資訊
+          const masked = msg.replace(/sk-[a-zA-Z0-9]{20,}/g, 'sk-***').replace(/os\.ENV\/OPENAI_API_KEY/gi, 'OPENAI_API_KEY');
+          console.log(`  最新錯誤：${masked.slice(0, 120)}`);
+        }
+      }
+    } else {
+      console.log(`  健康狀態：❌ HTTP ${res.status}`);
+    }
+  } catch (e) {
+    console.log(`  健康狀態：❌ 無法連接（${e.message}）`);
+  }
+
+  // 2. 模型清單
+  try {
+    const res = await fetch(`${LITELLM_URL}/model/info`, {
+      headers: { 'Authorization': `Bearer ${LITELLM_KEY}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const models = data.data || [];
+      console.log(`\n  可用模型（${models.length} 個）：`);
+      for (const m of models) {
+        const name = m.model_name;
+        const info = m.model_info || {};
+        const inputCost = info.input_cost_per_token != null ? `$${info.input_cost_per_token}/tok` : '?';
+        console.log(`    - ${name} (max ${info.max_input_tokens?.toLocaleString() || '?'} tok, ${inputCost})`);
+      }
+    }
+  } catch (e) {
+    console.log(`  模型清單：❌ ${e.message}`);
+  }
+
+  // 3. OTEL 追蹤配置狀態
+  try {
+    const lfRes = await fetch('http://localhost:3002/api/public/health', { method: 'GET' });
+    if (lfRes.ok) {
+      const lfData = await lfRes.json();
+      console.log(`\n  Langfuse OTEL：✅ 可達（v${lfData.version || '?'}）`);
+      console.log(`  OTEL 端點：http://langfuse:3000/api/public/otel`);
+    } else {
+      console.log(`\n  Langfuse OTEL：⚠️ HTTP ${lfRes.status}`);
+    }
+  } catch (e) {
+    console.log(`\n  Langfuse OTEL：❌ 無法連接（${e.message}）`);
+  }
+
+  // 4. 環境變數關鍵配置（docker exec litellm env 提取）
+  console.log(`\n  環境配置狀態：`);
+  try {
+    const { stdout } = await new Promise((resolve) => {
+      const { execSync } = require('child_process');
+      try {
+        const out = execSync("docker exec litellm-proxy env | grep -E 'OTEL|LITELLM_MASTER|DATABASE_URL' 2>/dev/null", { encoding: 'utf-8' });
+        resolve({ stdout: out });
+      } catch {
+        resolve({ stdout: '' });
+      }
+    });
+    if (stdout) {
+      for (const line of stdout.trim().split('\n')) {
+        const [key, ...vals] = line.split('=');
+        if (!key || !vals.length) continue;
+        if (key === 'OTEL_EXPORTER_OTLP_HEADERS') {
+          console.log(`    ${key}=[BASIC_AUTH_CONFIGURED]`);
+        } else {
+          const val = vals.join('=');
+          const masked = val.includes('sk-') || val.includes('pk-')
+            ? val.slice(0, 6) + '***' + val.slice(-4)
+            : val;
+          console.log(`    ${key}=${masked}`);
+        }
+      }
+    } else {
+      console.log(`    (無法讀取，請手動執行：docker exec litellm-proxy env)`);
+    }
+  } catch {
+    console.log(`    (無法讀取容器環境變數)`);
+  }
+
+  // 5. 最新花費日誌（驗證追蹤是否流動）
+  try {
+    const res = await fetch(`${LITELLM_URL}/spend/logs?limit=3`, {
+      headers: { 'Authorization': `Bearer ${LITELLM_KEY}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const latest = data[0];
+        const status = latest.metadata?.status || '?';
+        const model = latest.model || latest.model_group || '?';
+        const err = latest.metadata?.error_information?.error_class || '';
+        console.log(`\n  最近請求：`);
+        console.log(`    模型：${model}`);
+        console.log(`    狀態：${status === 'success' ? '✅ 成功' : '❌ ' + status + (err ? ' (' + err + ')' : '')}`);
+        console.log(`    花費：$${(latest.spend || 0).toFixed(6)}`);
+        if (err) {
+          const msg = (latest.metadata.error_information.error_message || '').replace(/sk-[a-zA-Z0-9]{20,}/g, 'sk-***');
+          console.log(`    錯誤：${msg.slice(0, 100)}`);
+        }
+      } else {
+        console.log(`\n  最近請求：無`);
+      }
+    }
+  } catch (e) {
+    console.log(`  最近請求：❌ ${e.message}`);
+  }
+
+  console.log();
+  if (!healthOk) {
+    console.log(`  ⚠️  注意：LiteLLM 所有端點均異常（通常是 API Key 無效或網路不可達）`);
+    console.log(`  檢查：.env 中 OPENAI_API_KEY / MINIMAX_API_KEY 是否正確`);
+    console.log();
+  }
+}
+
+// 6. user-add — 新增用戶
 async function cmdUserAdd(userNickname, botNickname) {
   if (!userNickname || !botNickname) {
     console.error('❌ 需要：node opstools.js user-add <用戶暱稱> <Bot暱稱>');
@@ -357,6 +497,9 @@ async function main() {
       case 'budget':
         await cmdBudget(arg1);
         break;
+      case 'litellm':
+        await cmdLitellm();
+        break;
       case 'user-add':
         await cmdUserAdd(arg1, arg2);
         break;
@@ -416,6 +559,7 @@ function printHelp() {
   status <agentId>            實例健康狀態（Gateway 是否正常）
   container-stats <agentId>   實例容器 CPU/記憶體/磁碟用量
   budget [agentId]            查看用戶 LiteLLM 花費（可指定或全部）
+  litellm                      詳細 LiteLLM 狀態（模型可用性 + OTEL 追蹤配置）
   user-add <nickname> <bot>   新增用戶並獲取飛書驗證連結
   scripts <agentId>           查看可用腳本列表
   read-script <agentId> <scriptName>
@@ -438,6 +582,7 @@ function printHelp() {
   node src/opstools.js container-stats user-jack-2223f9
   node src/opstools.js budget user-jack-2223f9
   node src/opstools.js budget
+  node src/opstools.js litellm
   node src/opstools.js user-add alice alice-bot
   node src/opstools.js read-script user-jack-2223f9 BOOTSTRAP.md
   node src/opstools.js logs user-jack-2223f9 100
