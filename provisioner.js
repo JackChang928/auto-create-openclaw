@@ -841,8 +841,10 @@ export async function checkLiteLLMProxyHealth() {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10_000);
+    const masterKey = process.env.LITELLM_MASTER_KEY || 'sk-1234';
     const res = await fetch(`${LITELLM_PROXY_URL}/health`, {
       signal: controller.signal,
+      headers: { Authorization: `Bearer ${masterKey}` },
     });
     clearTimeout(timer);
     let body = '';
@@ -898,21 +900,21 @@ export async function getLiteLLMSpend(userId) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10_000);
     const masterKey = process.env.LITELLM_MASTER_KEY || 'sk-1234';
-    const url = new URL(`${LITELLM_PROXY_URL}/spend`);
-    url.searchParams.set('user_id', userId);
-    const res = await fetch(url.toString(), {
+    // LiteLLM uses /spend/users to list all users' spend; filter by user_id
+    const res = await fetch(`${LITELLM_PROXY_URL}/spend/users`, {
       signal: controller.signal,
       headers: { Authorization: `Bearer ${masterKey}` },
     });
     clearTimeout(timer);
-    let body = {};
+    let body = [];
     try { body = JSON.parse(await res.text()); } catch { /* ignore */ }
     if (!res.ok) {
-      return { totalSpend: 0, statusCode: res.status, error: body?.error || res.statusText };
+      return { totalSpend: 0, statusCode: res.status, error: Array.isArray(body) ? null : (body?.error || res.statusText) };
     }
-    // litellm /spend returns { total_spend: ..., spend_per_model: {...}, ... }
-    const totalSpend = typeof body.total_spend === 'number' ? body.total_spend : 0;
-    return { totalSpend, statusCode: res.status, error: null, details: body };
+    // /spend/users returns array of { user_id, spend, ... }
+    const userEntry = Array.isArray(body) ? body.find(u => u.user_id === userId || String(u.user_id) === String(userId)) : null;
+    const totalSpend = userEntry ? (typeof userEntry.spend === 'number' ? userEntry.spend : 0) : 0;
+    return { totalSpend, statusCode: res.status, error: null, details: userEntry || {} };
   } catch (err) {
     return { totalSpend: 0, statusCode: 0, error: err.message };
   }
