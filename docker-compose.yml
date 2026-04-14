@@ -138,7 +138,7 @@ services:
           memory: 64M
 
   langfuse:
-    image: langfuse/langfuse:latest
+    image: langfuse/langfuse:2
     container_name: langfuse
     ports:
       - "3002:3000"
