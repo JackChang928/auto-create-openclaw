@@ -1,0 +1,30 @@
+# API Key 自動輪換 Systemd 服務
+# 
+# 安裝方法:
+#   sudo cp key-rotation.timer /etc/systemd/system/
+#   sudo cp key-rotation.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable key-rotation.timer
+#   sudo systemctl start key-rotation.timer
+#
+# 查看狀態:
+#   systemctl status key-rotation.timer
+#   journalctl -u key-rotation.service -f
+
+[Unit]
+Description=OpenClaw API Key Rotation
+After=network.target redis.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/jack/openclaw/auto-create-openclaw
+ExecStart=/usr/bin/node scripts/key-rotation.js --rotate
+Environment=NODE_ENV=production
+Restart=no
+
+# 安全加固
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

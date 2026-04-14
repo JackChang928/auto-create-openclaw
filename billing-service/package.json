@@ -1,0 +1,19 @@
+{
+  "name": "billing-service",
+  "version": "1.0.0",
+  "description": "Event-driven billing microservice for OpenClaw",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ioredis": "^5.4.1",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.4"
+  }
+}

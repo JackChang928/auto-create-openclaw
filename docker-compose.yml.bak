@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm-proxy
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml
+    environment:
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-1234}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY}
+      - DATABASE_URL=postgresql://litellm:litellm_pass@postgres:5432/litellm
+    command: [ "--config", "/app/config.yaml", "--detailed_debug" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - openclaw_net
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: litellm-postgres
+    environment:
+      - POSTGRES_USER=litellm
+      - POSTGRES_PASSWORD=litellm_pass
+      - POSTGRES_DB=litellm
+    ports:
+      - "5432:5432"
+    volumes:
+      - litellm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - openclaw_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: openclaw-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - openclaw_net
+
+  fluent-bit:
+    image: cr.fluentbit.io/fluent/fluent-bit:3.0.7
+    container_name: fluent-bit
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf
+    depends_on:
+      - redis
+    networks:
+      - openclaw_net
+
+  billing-service:
+    build: 
+      context: ./billing-service
+    container_name: openclaw-billing
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://litellm:litellm_pass@postgres:5432/litellm
+    depends_on:
+      redis:
+          condition: service_started
+      postgres:
+          condition: service_healthy
+    networks:
+      - openclaw_net
+
+  auth-service:
+    build: 
+      context: ./auth-service
+    container_name: openclaw-auth
+    ports:
+      - "3001:3001"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-super-secret-openclaw-key-change-me-in-prod}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+    depends_on:
+      - redis
+    networks:
+      - openclaw_net
+
+networks:
+  openclaw_net:
+    name: openclaw_shared_net
+    driver: bridge
+
+volumes:
+  litellm_pgdata:

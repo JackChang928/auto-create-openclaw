@@ -1,0 +1,479 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Type Check
+        run: npm run typecheck
+
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    # Only run build on main branch pushes and PRs (skip for pure lint-only PRs)
+    needs: lint-and-typecheck
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Type Check
+        run: npm run typecheck
+
+      - name: Run Tests
+        run: npm run test
+
+  docker-build:
+    name: Docker Build & Scan
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for main app
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/auto-create-openclaw
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+            type=ref,event=branch
+            type=ssemver,pattern={{version}}
+
+      - name: Build and push main app
+        uses: docker/build-push-action@v6
+        id: build-main
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push auth-service
+        uses: docker/build-push-action@v6
+        id: build-auth
+        with:
+          context: ./auth-service
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/auth-service:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/auth-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push billing-service
+        uses: docker/build-push-action@v6
+        id: build-billing
+        with:
+          context: ./billing-service
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/billing-service:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/billing-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Trivy Vulnerability Scans (local, after push) ───────────────────────
+
+      - name: Install Trivy
+        uses: aquasecurity/trivy-actions/trivy@main
+        with:
+          version: latest
+
+      - name: Scan main app image
+        uses: aquasecurity/trivy-actions/trivy@main
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/auto-create-openclaw:${{ github.sha }}
+          format: sarif
+          output: trivy-results-auto-create-openclaw.sarif
+          severity: CRITICAL,HIGH
+
+      - name: Scan auth-service image
+        uses: aquasecurity/trivy-actions/trivy@main
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/auth-service:${{ github.sha }}
+          format: sarif
+          output: trivy-results-auth-service.sarif
+          severity: CRITICAL,HIGH
+
+      - name: Scan billing-service image
+        uses: aquasecurity/trivy-actions/trivy@main
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/billing-service:${{ github.sha }}
+          format: sarif
+          output: trivy-results-billing-service.sarif
+          severity: CRITICAL,HIGH
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: |
+            trivy-results-auto-create-openclaw.sarif
+            trivy-results-auth-service.sarif
+            trivy-results-billing-service.sarif
+          category: trivy-container-scan
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Phase 2 CD: Staging Deployment (main branch push)
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: read
+      deployments: write
+
+    environment:
+      name: staging
+      url: https://staging.example.com
+
+    steps:
+      - name: Checkout deploy scripts
+        uses: actions/checkout@v4
+
+      # ── Register GitHub Deployment (pending) ────────────────────────────────
+      - name: Create GitHub Deployment (staging)
+        id: deployment
+        run: |
+          RESP=$(gh api repos/$GITHUB_REPOSITORY/deployments \
+            --field environment=staging \
+            --field description="Staging deployment of $GITHUB_SHA" \
+            --field ref="$GITHUB_REF_NAME" \
+            --field auto_merge=false \
+            --field required_contexts='[]' \
+            --jq '.id')
+          echo "deployment_id=${RESP}" >> $GITHUB_OUTPUT
+
+      - name: Set deployment status: in_progress
+        run: |
+          gh api repos/$GITHUB_REPOSITORY/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
+            --field state=in_progress \
+            --field environment_url=https://staging.example.com \
+            --field description="Deployment in progress via SSH"
+
+      - name: Configure SSH known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ vars.STAGING_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy to Staging via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.STAGING_HOST }}
+          username: ${{ vars.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          port: ${{ vars.STAGING_SSH_PORT || '22' }}
+          envs: GITHUB_SHA
+          script: |
+            set -euo pipefail
+
+            # ── Pull latest main-branch image from GHCR ──────────────────────
+            echo "Logging into GHCR..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u="${{ github.actor }}" --password-stdin
+
+            IMAGE="ghcr.io/${{ github.repository }}/auto-create-openclaw:${{ github.sha }}"
+            echo "Pulling staging image: ${IMAGE}"
+            docker pull "${IMAGE}" || true
+
+            # ── Update docker-compose stub to use GHCR image ─────────────────
+            COMPOSE_DIR="$HOME/auto-create-openclaw"
+            if [ -d "${COMPOSE_DIR}" ]; then
+              cd "${COMPOSE_DIR}"
+
+              # Replace the image in docker-compose.prod.yml
+              sed -i "s|image: ghcr.io.*/auto-create-openclaw:.*|image: ${IMAGE}|" docker-compose.prod.yml 2>/dev/null || true
+
+              echo "Pulling updated images..."
+              docker compose -f docker-compose.prod.yml pull
+
+              echo "Restarting staging services..."
+              docker compose -f docker-compose.prod.yml up -d --pull always
+
+              echo "Deployment complete!"
+              docker compose -f docker-compose.prod.yml ps
+            else
+              echo "⚠️  Deployment directory not found: ${COMPOSE_DIR}"
+              echo "Please manually deploy: docker pull ${IMAGE}"
+              exit 1
+            fi
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Phase 2 CD: Production Deployment (release tag push)
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: startsWith(github.ref, 'refs/tags/')
+
+    permissions:
+      contents: read
+      packages: read
+      deployments: write
+
+    environment:
+      name: production
+      url: https://example.com
+
+    steps:
+      - name: Checkout deploy scripts
+        uses: actions/checkout@v4
+
+      # ── Register GitHub Deployment (pending) ────────────────────────────────
+      - name: Create GitHub Deployment (production)
+        id: deployment
+        run: |
+          RESP=$(gh api repos/${{ github.repository }}/deployments \
+            --field environment=production \
+            --field description="Production deployment of ${{ github.ref }}" \
+            --field ref=${{ github.ref }} \
+            --field auto_merge=false \
+            --field required_contexts='[]' \
+            --jq '.id')
+          echo "deployment_id=${RESP}" >> $GITHUB_OUTPUT
+
+      - name: Set deployment status: in_progress
+        run: |
+          gh api repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
+            --field state=in_progress \
+            --field environment_url=https://example.com \
+            --field description="Production deployment in progress via SSH"
+
+      - name: Configure SSH known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ vars.PRODUCTION_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Set production tag name
+        id: vars
+        run: |
+          TAG="${github.ref#refs/tags/}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "image=ghcr.io/${{ github.repository }}/auto-create-openclaw:${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Production via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.PRODUCTION_HOST }}
+          username: ${{ vars.PRODUCTION_SSH_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          port: ${{ vars.PRODUCTION_SSH_PORT || '22' }}
+          envs: GITHUB_SHA,TAG
+          script: |
+            set -euo pipefail
+
+            TAG="${{ steps.vars.outputs.tag }}"
+            IMAGE="${{ steps.vars.outputs.image }}"
+
+            echo "═══════════════════════════════════════"
+            echo "Production Deployment — v${TAG}"
+            echo "Image: ${IMAGE}"
+            echo "═══════════════════════════════════════"
+
+            # ── Log into GHCR ────────────────────────────────────────────────
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u="${{ github.actor }}" --password-stdin
+
+            # ── Pull production image ─────────────────────────────────────────
+            echo "Pulling production image..."
+            docker pull "${IMAGE}"
+
+            # ── Deploy on production server ────────────────────────────────────
+            COMPOSE_DIR="$HOME/auto-create-openclaw-prod"
+            if [ -d "${COMPOSE_DIR}" ]; then
+              cd "${COMPOSE_DIR}"
+
+              # Update docker-compose.prod.yml with the tagged image
+              sed -i "s|image: ghcr.io.*/auto-create-openclaw:.*|image: ${IMAGE}|" docker-compose.prod.yml 2>/dev/null || true
+
+              echo "Pulling images..."
+              docker compose -f docker-compose.prod.yml pull
+
+              echo "Restarting production services (rolling update)..."
+              docker compose -f docker-compose.prod.yml up -d --pull always
+
+              echo "✅ Production deployment complete!"
+              docker compose -f docker-compose.prod.yml ps
+            else
+              echo "⚠️  Production deployment directory not found: ${COMPOSE_DIR}"
+              echo "Please manually run on the production server:"
+              echo "  docker login ghcr.io"
+              echo "  docker pull ${IMAGE}"
+              echo "  docker compose -f docker-compose.prod.yml up -d"
+              exit 1
+            fi
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Phase 3: Post-Deployment Smoke Tests
+  # ─────────────────────────────────────────────────────────────────────────────
+  smoke-test-staging:
+    name: Smoke Test (Staging)
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: always() && needs.deploy-staging.result == 'success'
+
+    environment:
+      name: staging
+
+    steps:
+      - name: Wait for container to start
+        run: sleep 30
+
+      - name: Smoke test health endpoint
+        id: smoke
+        run: |
+          echo "Curling staging health endpoint..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            "https://staging.example.com/api/health" \
+            || echo "000")
+          echo "http_code=${HTTP_CODE}" >> $GITHUB_OUTPUT
+          echo "Health check returned: ${HTTP_CODE}"
+
+          if [ "${HTTP_CODE}" = "200" ]; then
+            echo "✅ Smoke test PASSED"
+          else
+            echo "❌ Smoke test FAILED (HTTP ${HTTP_CODE})"
+            exit 1
+          fi
+
+      # ── Mark GitHub Deployment status: success ─────────────────────────────
+      - name: Get deployment ID from deploy-staging
+        id: get-deploy-id
+        run: |
+          DEPLOY_ID=$(gh api repos/${{ github.repository }}/deployments \
+            --environment staging \
+            --jq '.[] | select(.ref == "${{ github.ref_name }}") | .id' | head -1)
+          echo "deployment_id=${DEPLOY_ID}" >> $GITHUB_OUTPUT
+
+      - name: Set deployment status: success
+        if: steps.smoke.outcome == 'success'
+        run: |
+          gh api repos/${{ github.repository }}/deployments/${{ steps.get-deploy-id.outputs.deployment_id }}/statuses \
+            --field state=success \
+            --field environment_url=https://staging.example.com \
+            --field description="Smoke test passed — /api/health returned 200"
+
+      - name: Set deployment status: failure
+        if: steps.smoke.outcome == 'failure'
+        run: |
+          gh api repos/${{ github.repository }}/deployments/${{ steps.get-deploy-id.outputs.deployment_id }}/statuses \
+            --field state=failure \
+            --field environment_url=https://staging.example.com \
+            --field description="Smoke test FAILED — /api/health did not return 200"
+
+  smoke-test-production:
+    name: Smoke Test (Production)
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: always() && needs.deploy-production.result == 'success'
+
+    environment:
+      name: production
+
+    steps:
+      - name: Wait for container to start
+        run: sleep 45
+
+      - name: Smoke test health endpoint
+        id: smoke
+        run: |
+          echo "Curling production health endpoint..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            "https://example.com/api/health" \
+            || echo "000")
+          echo "http_code=${HTTP_CODE}" >> $GITHUB_OUTPUT
+          echo "Health check returned: ${HTTP_CODE}"
+
+          if [ "${HTTP_CODE}" = "200" ]; then
+            echo "✅ Smoke test PASSED"
+          else
+            echo "❌ Smoke test FAILED (HTTP ${HTTP_CODE})"
+            exit 1
+          fi
+
+      # ── Mark GitHub Deployment status: success ─────────────────────────────
+      - name: Get deployment ID from deploy-production
+        id: get-deploy-id
+        run: |
+          # Match by tag ref (refs/tags/vX.Y.Z)
+          DEPLOY_ID=$(gh api repos/${{ github.repository }}/deployments \
+            --environment production \
+            --jq '.[] | select(.ref == "${{ github.ref }}") | .id' | head -1)
+          echo "deployment_id=${DEPLOY_ID}" >> $GITHUB_OUTPUT
+
+      - name: Set deployment status: success
+        if: steps.smoke.outcome == 'success'
+        run: |
+          gh api repos/${{ github.repository }}/deployments/${{ steps.get-deploy-id.outputs.deployment_id }}/statuses \
+            --field state=success \
+            --field environment_url=https://example.com \
+            --field description="Smoke test passed — /api/health returned 200"
+
+      - name: Set deployment status: failure
+        if: steps.smoke.outcome == 'failure'
+        run: |
+          gh api repos/${{ github.repository }}/deployments/${{ steps.get-deploy-id.outputs.deployment_id }}/statuses \
+            --field state=failure \
+            --field environment_url=https://example.com \
+            --field description="Smoke test FAILED — /api/health did not return 200"
+

@@ -1,0 +1,33 @@
+{
+  "name": "auto-create-openclaw",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "One-click OpenClaw agent provisioning service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "lint": "eslint .",
+    "typecheck": "node --check *.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "vitest": {
+    "testTimeout": 10000,
+    "globals": true
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "cors": "^2.8.6",
+    "express": "^5.0.0",
+    "playwright": "^1.59.1",
+    "qrcode": "^1.5.4",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^10.2.0",
+    "globals": "^17.4.0",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.4"
+  }
+}

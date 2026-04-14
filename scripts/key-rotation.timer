@@ -1,0 +1,19 @@
+# API Key 自動輪換計時器
+# 每 7 天自動執行一次輪換
+#
+# 安裝:
+#   sudo cp key-rotation.timer /etc/systemd/system/
+#   sudo systemctl enable --now key-rotation.timer
+
+[Unit]
+Description=OpenClaw API Key Rotation Timer (every 7 days)
+Requires=key-rotation.service
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+# 每 7 天
+Interval=7d
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>實例詳情 — OpenClaw Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    .container { max-width: 1160px; }
+    .instance-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 26px; gap: 16px; }
+    .instance-title { font-size: 1.8rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .instance-meta { font-size: 0.85rem; color: var(--text-muted); font-family: 'Courier New', monospace; }
+    .instance-status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 30px; font-size: 1rem; font-weight: 600; }
+
+    .action-bar { display: flex; gap: 12px; flex-wrap: wrap; padding: 24px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-card); border-radius: var(--radius-sm); margin-bottom: 24px; }
+    .action-bar .action-label { width: 100%; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+
+    .summary-grid, .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 24px; }
+    .mini-card { padding: 20px; border: 1px solid var(--border-card); border-radius: var(--radius-sm); background: rgba(0,0,0,0.18); }
+    .mini-title { font-size: 0.82rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+    .mini-value { font-size: 1.5rem; font-weight: 700; color: #fff; }
+    .mini-sub { margin-top: 8px; font-size: 0.82rem; color: var(--text-secondary); }
+
+    .info-item { display: flex; flex-direction: column; gap: 6px; }
+    .info-item label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .info-item span { font-size: 1rem; color: var(--text-primary); font-weight: 500; word-break: break-all; }
+
+    .signal-stack { display: flex; flex-wrap: wrap; gap: 8px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 0.76rem; font-weight: 600; border: 1px solid transparent; }
+    .badge-healthy { background: rgba(16,185,129,0.15); color: #6ee7b7; border-color: rgba(16,185,129,0.25); }
+    .badge-warning { background: rgba(245,158,11,0.15); color: #fcd34d; border-color: rgba(245,158,11,0.25); }
+    .badge-critical { background: rgba(239,68,68,0.14); color: #fca5a5; border-color: rgba(239,68,68,0.25); }
+    .badge-pending { background: rgba(96,165,250,0.14); color: #93c5fd; border-color: rgba(96,165,250,0.24); }
+    .badge-info { background: rgba(59,130,246,0.14); color: #bfdbfe; border-color: rgba(96,165,250,0.24); }
+    .badge-idle, .badge-unknown { background: rgba(120,130,160,0.16); color: #cbd5e1; border-color: rgba(148,163,184,0.22); }
+
+    .progress-bar { height: 10px; border-radius: 999px; background: rgba(148,163,184,0.16); overflow: hidden; margin-top: 8px; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #60a5fa 0%, #818cf8 100%); }
+    .progress-fill.warn { background: linear-gradient(90deg, #f59e0b 0%, #f97316 100%); }
+    .progress-fill.critical { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
+
+    .log-toolbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .log-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .log-viewer { min-height: 280px; width: 100%; background: rgba(2,6,23,0.9); color: #dbeafe; border: 1px solid rgba(96,165,250,0.12); border-radius: var(--radius-sm); padding: 16px; font-family: 'Courier New', monospace; font-size: 0.82rem; white-space: pre-wrap; overflow: auto; }
+    .timeline { display: grid; gap: 10px; }
+    .timeline-item { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(148,163,184,0.14); background: rgba(2, 6, 23, 0.32); }
+    .timeline-time { color: var(--text-muted); font-size: 0.8rem; }
+    .timeline-title { color: #fff; font-weight: 600; font-size: 0.9rem; }
+    .timeline-detail { color: var(--text-secondary); font-size: 0.82rem; margin-top: 2px; }
+    .timeline-empty { color: var(--text-muted); font-size: 0.9rem; }
+
+    .budget-form { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .budget-input { width: 140px; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border-input); border-radius: var(--radius-xs); color: var(--text-primary); font-size: 1rem; font-family: var(--font); }
+    .budget-input:focus { outline: none; border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+    .danger-zone { border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-sm); padding: 24px; background: rgba(239, 68, 68, 0.05); margin-top: 24px; }
+    .danger-zone h3 { color: #fca5a5; font-size: 1.1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .danger-zone p { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px; }
+
+    .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 24px; transition: color 0.2s; }
+    .back-link:hover { color: #fff; text-decoration: none; }
+    .page-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 16px; color: var(--text-muted); }
+    .page-error { text-align: center; padding: 48px; color: var(--error); }
+
+    .status-running { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-stopped, .status-provisioned { background: rgba(90, 99, 128, 0.15); color: var(--text-secondary); border: 1px solid var(--border-input); }
+    .status-pending_activation, .status-pending_scan { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .status-error { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    @media (max-width: 700px) {
+      .instance-header { flex-direction: column; }
+      .action-bar, .budget-form, .log-toolbar { flex-direction: column; }
+      .budget-input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
+
+  <div class="container" style="padding: 40px 20px;">
+    <a href="/admin.html" class="back-link fade-in">← 返回監控列表</a>
+
+    <div id="page-loading" class="page-loading">
+      <div class="spinner" style="width:32px;height:32px;border-width:3px;"></div>
+      <p>載入實例資料...</p>
+    </div>
+
+    <div id="page-content" style="display:none;">
+      <div class="instance-header fade-in">
+        <div>
+          <h1 class="instance-title" id="bot-name">—</h1>
+          <div class="instance-meta" id="agent-id">—</div>
+        </div>
+        <div class="instance-status status-stopped" id="status-badge">
+          <span class="status-dot"></span>
+          <span id="status-text">—</span>
+        </div>
+      </div>
+
+      <div class="action-bar fade-in" style="animation-delay:0.1s;">
+        <span class="action-label">快速操作</span>
+        <button class="btn-primary btn-start" id="btn-start" onclick="InstanceDetail.start()">▶ 啟動</button>
+        <button class="btn-primary btn-stop" id="btn-stop" onclick="InstanceDetail.stop()">⏸ 停用</button>
+        <button class="btn-secondary" id="btn-restart" onclick="InstanceDetail.restart()">🔄 重啟</button>
+        <button class="btn-secondary" id="btn-activate" style="display:none;" onclick="InstanceDetail.activate()">🚀 建立容器</button>
+        <button class="btn-secondary" onclick="InstanceDetail.refresh(true)">↻ 刷新快照</button>
+      </div>
+
+      <div id="summary-grid" class="summary-grid fade-in" style="animation-delay:0.15s;"></div>
+      <div id="info-grid" class="info-grid fade-in" style="animation-delay:0.18s;"></div>
+
+      <div class="card fade-in" style="animation-delay:0.22s; margin-bottom:24px;">
+        <h2 class="card-title"><span class="title-icon">💰</span>API 預算設定</h2>
+        <div class="budget-form">
+          <div class="form-group" style="margin:0; flex:1;">
+            <label for="budget-input" style="margin-bottom:8px;">每月預算上限 (USD)</label>
+            <input type="number" id="budget-input" class="budget-input" step="1" min="1" value="20">
+          </div>
+          <button class="btn-secondary" onclick="InstanceDetail.saveBudget()">儲存設定</button>
+        </div>
+      </div>
+
+      <div class="card fade-in" style="animation-delay:0.26s; margin-bottom:24px;">
+        <div class="log-toolbar">
+          <h2 class="card-title" style="margin:0;"><span class="title-icon">📜</span>即時 Logs</h2>
+          <div class="log-actions">
+            <button class="btn-sm btn-secondary" onclick="InstanceDetail.loadLogs('docker')">Docker logs</button>
+            <button class="btn-sm btn-secondary" onclick="InstanceDetail.loadLogs('openclaw')">OpenClaw logs</button>
+          </div>
+        </div>
+        <div class="meta-text" id="log-meta">尚未讀取 logs</div>
+        <pre class="log-viewer" id="log-viewer">載入中...</pre>
+      </div>
+
+      <div class="card fade-in" style="animation-delay:0.28s; margin-bottom:24px;">
+        <div class="log-toolbar">
+          <h2 class="card-title" style="margin:0;"><span class="title-icon">🕒</span>事件時間線</h2>
+          <div class="log-actions">
+            <button class="btn-sm btn-secondary" onclick="InstanceDetail.loadEvents()">刷新事件</button>
+          </div>
+        </div>
+        <div class="meta-text" id="events-meta">尚未讀取事件</div>
+        <div class="timeline" id="events-list"></div>
+      </div>
+
+      <div class="danger-zone fade-in" style="animation-delay:0.3s;">
+        <h3>⚠️ 危險區域</h3>
+        <p>刪除實例將移除 Docker 容器、釋放 Port、刪除所有關聯資料。此操作無法撤銷。</p>
+        <button class="btn-sm btn-stop" id="btn-delete" onclick="InstanceDetail.delete()">🗑 刪除此實例</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/api.js"></script>
+  <script src="/assets/app.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const instanceId = parseInt(params.get('id'), 10);
+    const { showToast, escHtml, sleep } = window.OpenClawApp;
+
+    if (!instanceId || isNaN(instanceId)) {
+      document.getElementById('page-loading').innerHTML = '<div class="page-error">❌ 缺少實例 ID<br><a href="/admin.html" style="color:#a5b4fc;margin-top:16px;display:inline-block;">返回列表</a></div>';
+    }
+
+    let snapshot = null;
+    let api = null;
+    let currentLogSource = 'docker';
+
+    function healthBadge(level, label) {
+      const normalized = level || 'unknown';
+      return `<span class="badge badge-${normalized}">${escHtml(label)}</span>`;
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '—';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value);
+      return d.toLocaleString('zh-TW', { hour12: false });
+    }
+
+    function formatCurrency(value) {
+      return `$${Number(value || 0).toFixed(2)}`;
+    }
+
+    async function loadInstanceDetail(force = false) {
+      if (!instanceId) return;
+      api = new OpenClawAdminAPI();
+      if (!api.isLoggedIn()) {
+        window.location.href = '/admin.html';
+        return;
+      }
+
+      try {
+        const data = await api.getDashboardInstance(instanceId, force);
+        snapshot = data.item;
+        if (!snapshot) throw new Error('找不到實例');
+        renderDetail(snapshot);
+        document.getElementById('page-loading').style.display = 'none';
+        document.getElementById('page-content').style.display = 'block';
+        await Promise.all([
+          loadLogs(currentLogSource),
+          loadEvents(),
+        ]);
+      } catch (err) {
+        document.getElementById('page-loading').innerHTML = `<div class="page-error">載入失敗: ${escHtml(err.message)}</div>`;
+      }
+    }
+
+    function renderDetail(item) {
+      document.getElementById('bot-name').textContent = `${item.userNickname} / ${item.botNickname}`;
+      document.getElementById('agent-id').textContent = item.agentId || '—';
+
+      const statusBadge = document.getElementById('status-badge');
+      statusBadge.className = `instance-status status-${item.lifecycle}`;
+      document.getElementById('status-text').textContent = {
+        pending_scan: '等待掃碼',
+        pending_activation: '等待激活',
+        provisioned: '已部署',
+        running: '運行中',
+        stopped: '已停止',
+        error: '錯誤',
+      }[item.lifecycle] || item.lifecycle;
+
+      document.getElementById('btn-start').style.display = ['provisioned', 'stopped', 'error'].includes(item.lifecycle) ? 'inline-flex' : 'none';
+      document.getElementById('btn-stop').style.display = item.lifecycle === 'running' ? 'inline-flex' : 'none';
+      document.getElementById('btn-restart').style.display = item.lifecycle === 'running' ? 'inline-flex' : 'none';
+      document.getElementById('btn-activate').style.display = item.lifecycle === 'pending_activation' ? 'inline-flex' : 'none';
+
+      const ratio = item.billing?.ratio == null ? 0 : Math.max(0, Math.min(1, item.billing.ratio));
+      const fillClass = item.billing?.ratio >= 1 ? 'critical' : item.billing?.ratio >= 0.8 ? 'warn' : '';
+      document.getElementById('summary-grid').innerHTML = `
+        <div class="mini-card">
+          <div class="mini-title">Overall Health</div>
+          <div class="mini-value">${escHtml(item.health?.overall || 'unknown')}</div>
+          <div class="mini-sub">${escHtml(item.runtime?.gatewayResponding ? 'Gateway responding' : 'Gateway not responding')}</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">CPU</div>
+          <div class="mini-value">${item.runtime?.cpuPercent == null ? '—' : `${item.runtime.cpuPercent}%`}</div>
+          <div class="mini-sub">Mem: ${escHtml(item.runtime?.memUsageText || '—')}</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">Spend / Budget</div>
+          <div class="mini-value">${escHtml(formatCurrency(item.billing?.spend || 0))}</div>
+          <div class="mini-sub">Budget ${escHtml(formatCurrency(item.billing?.budget || 0))}</div>
+          <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${ratio * 100}%"></div></div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">24h Sessions</div>
+          <div class="mini-value">${escHtml(item.openclaw?.sessions?.count24h ?? 0)}</div>
+          <div class="mini-sub">Last: ${escHtml(formatDateTime(item.activity?.lastSessionAt))}</div>
+        </div>
+      `;
+
+      document.getElementById('info-grid').innerHTML = `
+        <div class="mini-card">
+          <h3 style="font-size:1rem;color:var(--text-secondary);margin-bottom:16px;">📄 基本資訊</h3>
+          ${row('User Nickname', item.userNickname)}
+          ${row('Bot Nickname', item.botNickname)}
+          ${row('Agent ID', item.agentId, true)}
+          ${row('Port', item.port || '—')}
+          ${row('Container', item.containerName || '—', true)}
+          ${row('Image', item.imageName || '—')}
+        </div>
+        <div class="mini-card">
+          <h3 style="font-size:1rem;color:var(--text-secondary);margin-bottom:16px;">🩺 健康訊號</h3>
+          <div class="signal-stack" style="margin-bottom:12px;">
+            ${healthBadge(item.health?.overall, `Overall · ${item.health?.overall || 'unknown'}`)}
+            ${healthBadge(item.health?.badges?.docker, 'Docker')}
+            ${healthBadge(item.health?.badges?.gateway, 'Gateway')}
+            ${healthBadge(item.health?.badges?.auth, 'Auth')}
+            ${healthBadge(item.health?.badges?.billing, 'Budget')}
+            ${healthBadge(item.health?.badges?.cron, 'Cron')}
+          </div>
+          ${row('Runtime alive', item.runtime?.alive ? 'Yes' : 'No')}
+          ${row('Docker state', item.runtime?.status || '—')}
+          ${row('Gateway process', item.runtime?.gatewayProcessPresent ? 'Present' : 'Missing')}
+          ${row('Gateway responding', item.runtime?.gatewayResponding ? 'Yes' : 'No')}
+          ${row('Restart count', item.runtime?.restartCount ?? '—')}
+        </div>
+        <div class="mini-card">
+          <h3 style="font-size:1rem;color:var(--text-secondary);margin-bottom:16px;">🔐 授權 / Feishu</h3>
+          ${row('Auth mode', item.auth?.mode || '—')}
+          ${row('Auth ready', item.auth?.ready ? 'Yes' : 'No')}
+          ${row('Feishu ready', item.feishu?.ready ? 'Yes' : 'No')}
+          ${row('Feishu App ID', item.feishu?.appId || '—', true)}
+          ${row('Open ID', item.feishu?.openId || '—', true)}
+          ${row('Domain', item.feishu?.domain || '—')}
+        </div>
+        <div class="mini-card">
+          <h3 style="font-size:1rem;color:var(--text-secondary);margin-bottom:16px;">📊 OpenClaw Activity</h3>
+          ${row('24h sessions', item.openclaw?.sessions?.count24h ?? 0)}
+          ${row('Last session', formatDateTime(item.activity?.lastSessionAt))}
+          ${row('Cron jobs enabled', `${item.openclaw?.cron?.enabled ?? 0}/${item.openclaw?.cron?.total ?? 0}`)}
+          ${row('Created', formatDateTime(item.db?.createdAt))}
+          ${row('Updated', formatDateTime(item.db?.updatedAt))}
+        </div>
+      `;
+
+      document.getElementById('budget-input').value = item.billing?.budget ?? 20;
+    }
+
+    function row(label, value, mono = false) {
+      return `
+        <div class="info-item">
+          <label>${label}</label>
+          <span class="${mono ? 'mono' : ''}">${escHtml(value || '—')}</span>
+        </div>
+      `;
+    }
+
+    async function loadLogs(source = 'docker') {
+      currentLogSource = source;
+      document.getElementById('log-meta').textContent = `${source} logs 讀取中...`;
+      document.getElementById('log-viewer').textContent = 'Loading...';
+      try {
+        const data = await api.getDashboardLogs(instanceId, { source, tail: 160 });
+        document.getElementById('log-viewer').textContent = data.content || '(空)';
+        document.getElementById('log-meta').textContent = `${source} · ${formatDateTime(data.generatedAt)}`;
+      } catch (err) {
+        document.getElementById('log-viewer').textContent = err.message;
+        document.getElementById('log-meta').textContent = `${source} logs 讀取失敗`;
+      }
+    }
+
+    async function loadEvents() {
+      const metaEl = document.getElementById('events-meta');
+      const listEl = document.getElementById('events-list');
+      metaEl.textContent = '事件讀取中...';
+      listEl.innerHTML = '<div class="timeline-empty">Loading...</div>';
+      try {
+        const data = await api.getDashboardEvents(instanceId, { limit: 40 });
+        const items = Array.isArray(data.items) ? data.items : [];
+        metaEl.textContent = `最近 ${items.length} 筆 · ${formatDateTime(data.generatedAt)}`;
+        if (!items.length) {
+          listEl.innerHTML = '<div class="timeline-empty">尚無事件記錄。</div>';
+          return;
+        }
+        listEl.innerHTML = items.map((item) => `
+          <div class="timeline-item">
+            <div>${healthBadge(item.severity || 'info', (item.severity || 'info').toUpperCase())}</div>
+            <div>
+              <div class="timeline-time">${escHtml(formatDateTime(item.created_at))} · ${escHtml(item.actor || 'system')}</div>
+              <div class="timeline-title">${escHtml(item.title || item.event_type || 'event')}</div>
+              <div class="timeline-detail">${escHtml(item.detail || '')}</div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        listEl.innerHTML = `<div class="timeline-empty">${escHtml(err.message)}</div>`;
+        metaEl.textContent = '事件讀取失敗';
+      }
+    }
+
+    const InstanceDetail = {
+      async refresh(force = false) { await loadInstanceDetail(force); },
+
+      async saveBudget() {
+        const val = parseFloat(document.getElementById('budget-input').value);
+        if (isNaN(val) || val < 1) return showToast('請輸入有效的預算金額（≥ 1）');
+        try {
+          await api.setBudget(instanceId, val);
+          showToast('預算已更新');
+          await loadInstanceDetail(true);
+        } catch (err) {
+          showToast(err.message);
+        }
+      },
+
+      async start() {
+        const btn = document.getElementById('btn-start');
+        btn.disabled = true; btn.textContent = '⏳ 啟動中...';
+        try {
+          await api.start(instanceId);
+          showToast('啟動成功');
+          await loadInstanceDetail(true);
+        } catch (err) {
+          showToast(err.message);
+          btn.disabled = false; btn.textContent = '▶ 啟動';
+        }
+      },
+
+      async stop() {
+        const btn = document.getElementById('btn-stop');
+        btn.disabled = true; btn.textContent = '⏳ 停用中...';
+        try {
+          await api.stop(instanceId);
+          showToast('已停用');
+          await loadInstanceDetail(true);
+        } catch (err) {
+          showToast(err.message);
+          btn.disabled = false; btn.textContent = '⏸ 停用';
+        }
+      },
+
+      async restart() {
+        const btn = document.getElementById('btn-restart');
+        btn.disabled = true; btn.textContent = '⏳ 重啟中...';
+        try {
+          await api.stop(instanceId);
+          await sleep(1500);
+          await api.start(instanceId);
+          showToast('重啟成功');
+          await loadInstanceDetail(true);
+        } catch (err) {
+          showToast(err.message);
+          btn.disabled = false; btn.textContent = '🔄 重啟';
+        }
+      },
+
+      async activate() {
+        const btn = document.getElementById('btn-activate');
+        btn.disabled = true; btn.textContent = '⏳ 建立中...';
+        try {
+          await api.activate(instanceId);
+          showToast('容器建立成功');
+          await loadInstanceDetail(true);
+        } catch (err) {
+          showToast(err.message);
+          btn.disabled = false; btn.textContent = '🚀 建立容器';
+        }
+      },
+
+      async delete() {
+        const name = snapshot ? `${snapshot.userNickname}/${snapshot.botNickname}` : `ID=${instanceId}`;
+        const ok = confirm(`確定要刪除「${name}」？\n\n這會移除容器、釋放 Port、刪除資料。無法撤銷。`);
+        if (!ok) return;
+        try {
+          await api.deleteInstance(instanceId);
+          showToast('實例已刪除');
+          setTimeout(() => { window.location.href = '/admin.html'; }, 1200);
+        } catch (err) {
+          showToast(err.message);
+        }
+      },
+
+      async loadLogs(source) {
+        await loadLogs(source);
+      },
+
+      async loadEvents() {
+        await loadEvents();
+      },
+    };
+
+    window.InstanceDetail = InstanceDetail;
+    loadInstanceDetail();
+  </script>
+</body>
+</html>

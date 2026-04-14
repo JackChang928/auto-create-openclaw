@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClaw - 企業級專屬 AI 數位秘書</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    /* ─── Page-specific styles for index.html ─────────────────────── */
+
+    /* Hero */
+    .hero { position: relative; z-index: 1; text-align: center; padding: 100px 20px 60px; max-width: 800px; margin: 0 auto; }
+    .hero-title { font-size: 3.5rem; font-weight: 700; line-height: 1.2; margin-bottom: 24px; letter-spacing: -0.03em; }
+    .hero-subtitle { font-size: 1.15rem; color: var(--text-secondary); margin-bottom: 40px; font-weight: 300; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+    /* Features */
+    .features { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto 80px; padding: 0 5%; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+    .feature-card { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius); padding: 32px; backdrop-filter: blur(10px); transition: transform var(--transition); }
+    .feature-card:hover { transform: translateY(-5px); border-color: rgba(120, 140, 255, 0.4); }
+    .feature-icon { font-size: 2.5rem; margin-bottom: 20px; }
+    .feature-card h3 { font-size: 1.3rem; margin-bottom: 12px; color: #fff; }
+    .feature-card p { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; }
+
+    /* Onboarding */
+    .onboarding { position: relative; z-index: 1; max-width: 600px; margin: 0 auto 100px; padding: 0 20px; }
+    .onboarding-header { text-align: center; margin-bottom: 40px; }
+    .onboarding-header h2 { font-size: 2rem; margin-bottom: 10px; }
+    .onboarding-header p { color: var(--text-secondary); }
+
+    /* QR Code */
+    .qr-container { display: flex; gap: 32px; align-items: center; }
+    .qr-box { position: relative; width: 200px; height: 200px; background: #fff; border-radius: var(--radius-sm); padding: 10px; flex-shrink: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .qr-box img { width: 100%; height: 100%; object-fit: contain; }
+    .qr-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border-radius: var(--radius-sm); }
+    .qr-expired { text-align: center; }
+    .qr-expired p { color: #fca5a5; font-size: 0.9rem; margin-bottom: 12px; }
+
+    .qr-instructions { flex: 1; }
+    .qr-instructions h3 { font-size: 1.1rem; margin-bottom: 16px; color: #fff; }
+    .qr-instructions ol { padding-left: 20px; display: flex; flex-direction: column; gap: 10px; color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 24px; }
+    .qr-instructions li::marker { color: #6366f1; font-weight: bold; }
+    .link-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+    .link-box { margin-top: 16px; padding: 14px; border-radius: var(--radius-xs); background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); word-break: break-all; font-size: 0.85rem; color: var(--text-secondary); }
+
+    /* Success */
+    .success-header { text-align: center; margin-bottom: 30px; }
+    .success-icon { font-size: 3.5rem; display: block; margin-bottom: 16px; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+    .success-header h2 { font-size: 1.6rem; background: linear-gradient(135deg, #34d399, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    /* Dashboard */
+    .dashboard-view { position: relative; z-index: 1; max-width: 1000px; margin: 40px auto 100px; padding: 0 20px; display: none; }
+    .dashboard-header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border-card); padding-bottom: 20px; }
+    .dashboard-title { font-size: 2rem; font-weight: 700; color: #fff; }
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+    .dash-card { background: rgba(20, 25, 50, 0.4); border: 1px solid var(--border-card); border-radius: var(--radius-sm); padding: 24px; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .dash-card-title { font-size: 1.05rem; color: var(--text-secondary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .status-active { display: inline-flex; align-items: center; gap: 12px; font-size: 1.5rem; font-weight: 600; color: var(--success); margin-bottom: 8px; }
+    .status-dot { width: 12px; height: 12px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success); animation: pulse 2s infinite; }
+    .dash-actions { display: flex; gap: 10px; margin-top: auto; padding-top: 16px; }
+
+    @media (max-width: 768px) {
+      .hero-title { font-size: 2.5rem; }
+      .qr-container { flex-direction: column; text-align: center; }
+      .qr-instructions ol { text-align: left; }
+      .link-actions { flex-direction: column; }
+      .link-actions a, .link-actions button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="logo">
+        <span class="logo-icon">🦞</span>
+        <span class="logo-text">OpenClaw</span>
+      </a>
+      <div>
+        <!-- 未登入狀態按鈕 -->
+        <button type="button" id="nav-login-btn" class="btn-secondary btn-sm" onclick="showLoginModal()">用戶登入</button>
+        <!-- 已登入狀態選單 (預設隱藏) -->
+        <div id="nav-user-menu" style="display: none; align-items: center; gap: 16px;">
+          <span style="font-size: 0.9rem; color: var(--text-secondary);">歡迎, <strong id="nav-username" style="color: #fff;">User</strong></span>
+          <button type="button" class="btn-secondary btn-sm" onclick="logout()">登出</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Landing Sections Wrapper (用來在登入後隱藏) -->
+  <div id="landing-sections">
+    <!-- Hero Section -->
+    <header class="hero">
+      <div class="badge fade-in" style="animation-delay: 0.1s;">🚀 Next-Gen Workspace</div>
+      <h1 class="hero-title fade-in" style="animation-delay: 0.2s;">為您的團隊配備<br><span class="text-gradient">專屬 AI 數位秘書</span></h1>
+      <p class="hero-subtitle fade-in" style="animation-delay: 0.3s;">只需掃描 QR Code，系統即刻為您分配獨立算力與存儲空間，零門檻擁有懂您業務的全能編程與企劃助手。</p>
+      <div class="fade-in" style="animation-delay: 0.4s;">
+        <button class="btn-primary" onclick="document.getElementById('onboarding').scrollIntoView();">立即認領專屬秘書</button>
+      </div>
+    </header>
+
+    <!-- Features Section -->
+    <section class="features">
+      <div class="feature-card fade-in" style="animation-delay: 0.2s;">
+        <div class="feature-icon">🔒</div>
+        <h3>資料絕對隔離</h3>
+        <p>每個使用者皆享有獨立的容器 (Container) 運行環境，支援專屬知識庫與上下文記憶，保障商業機密不外洩。</p>
+      </div>
+      <div class="feature-card fade-in" style="animation-delay: 0.3s;">
+        <div class="feature-icon">⚡</div>
+        <h3>毫秒級無縫接入</h3>
+        <p>透過飛書 (Feishu) 原生整合，不需下載新 App。將 AI 秘書拉入群組或單獨對話，工作隨時啟動。</p>
+      </div>
+      <div class="feature-card fade-in" style="animation-delay: 0.4s;">
+        <div class="feature-icon">🧠</div>
+        <h3>自動分配算力</h3>
+        <p>多模型智能調度。企業管理員只需設定預算上限，系統自動為每位員工調配最合適的 AI 運算資源。</p>
+      </div>
+    </section>
+
+    <!-- Onboarding Process -->
+    <section id="onboarding" class="onboarding">
+      <div class="onboarding-header">
+        <h2>只需三步，即刻啟用</h2>
+        <p>免去繁瑣的註冊流程，隨掃即用</p>
+      </div>
+
+      <!-- Step 1: Initial Form -->
+      <div id="step-1" class="card">
+        <h2 class="card-title">
+          <span class="step-num">1</span>
+          設定助手屬性
+        </h2>
+        <form id="register-form" autocomplete="off">
+          <div class="form-group">
+            <label for="user-nickname">你的暱稱</label>
+            <input type="text" id="user-nickname" placeholder="小明" required maxlength="30">
+            <span class="input-hint">Bot 會用這個名字來稱呼你</span>
+          </div>
+          <div class="form-group">
+            <label for="bot-nickname">Bot 暱稱</label>
+            <input type="text" id="bot-nickname" placeholder="專屬編程助手" required maxlength="30">
+            <span class="input-hint">你的 AI 助手在飛書中的名字</span>
+          </div>
+          <button type="submit" id="submit-btn" class="btn-primary" style="width: 100%; margin-top: 10px;">
+            <span class="btn-text">下ㄧ步：獲取飛書授權碼 ➔</span>
+            <span class="btn-loading" style="display:none; align-items:center; justify-content:center; gap:8px;">
+              <span class="spinner"></span> 處理中...
+            </span>
+          </button>
+        </form>
+        <div id="register-error" class="error-msg" style="display:none;"></div>
+      </div>
+
+      <!-- Step 2: QR Code Scan -->
+      <div id="step-2" class="card" style="display:none; margin-top: 20px;">
+        <h2 class="card-title">
+          <span class="step-num">2</span>
+          授權建立飛書 Bot
+        </h2>
+        <div class="qr-container">
+          <div class="qr-box">
+            <img id="qr-image" src="" alt="飛書授權 QR Code">
+            <div class="qr-overlay" id="qr-overlay" style="display:none;">
+              <div class="qr-expired">
+                <span style="font-size: 2rem;">⚠️</span>
+                <p>QR Code 已過期</p>
+                <button class="btn-sm btn-secondary" onclick="location.reload()">重新獲取</button>
+              </div>
+            </div>
+          </div>
+          <div class="qr-instructions">
+            <h3>請打開手機版飛書掃描左側條碼</h3>
+            <ol>
+              <li>掃描後點擊「授權」</li>
+              <li>系統將自動為你建立專屬機器人</li>
+              <li>無需手動填寫任何 AppID/Secret</li>
+            </ol>
+            <div class="poll-status" id="poll-status">
+              <span class="spinner spinner-sm"></span>
+              等待掃碼授權中...
+            </div>
+            <div class="link-actions">
+              <a id="verification-link-btn" class="btn-secondary" href="#" target="_blank" rel="noopener noreferrer">在飛書中打開</a>
+              <button type="button" class="btn-secondary" id="copy-link-btn">複製連結</button>
+            </div>
+            <div class="link-box" id="verification-link-text"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2b: Codex OAuth (AI Model Authorization) -->
+      <div id="step-2b" class="card" style="display:none; margin-top: 20px;">
+        <h2 class="card-title"><span class="step-num">2b</span>AI 授權方式</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">請選擇 AI 授權方式。建議使用 Codex 訂閱授權。</p>
+        <div style="display: grid; gap: 12px; margin-bottom: 20px;">
+          <button id="btn-codex-oauth" class="btn-primary" style="width:100%; padding: 16px; font-size: 1rem;" onclick="startCodexOAuth()">
+            🤖 使用 Codex 訂閱授權
+            <span style="display: block; font-size: 0.8rem; opacity: 0.7; margin-top: 4px;">推薦：使用 OpenAI 官方訂閱，穩定快速</span>
+          </button>
+          <button id="btn-skip-codex" class="btn-secondary" style="width:100%; padding: 12px;" onclick="skipCodexOAuth()">
+            稍後再說（使用 API Key 模式）
+          </button>
+        </div>
+        <div id="auth-mode-note" style="display:none; margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-card); background: rgba(0,0,0,0.22); color: var(--text-secondary); font-size: 0.92rem;"></div>
+        <div id="codex-oauth-area" style="display:none;">
+          <div style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-card); margin-bottom: 16px;">
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 12px;">步驟 1：點擊按鈕取得授權連結</p>
+            <div style="margin-bottom: 12px;">
+              <button id="btn-get-codex-url" class="btn-secondary" style="padding: 8px 16px;" onclick="getCodexOAuthUrl()">🔗 取得 Codex 授權連結</button>
+            </div>
+            <div id="codex-url-display" style="display:none; margin-bottom: 12px;">
+              <input type="text" id="codex-auth-url" readonly style="width:100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border-card); color: var(--text-primary); padding: 8px; border-radius: 4px; font-size: 0.85rem; font-family: monospace;" />
+              <button class="btn-secondary" style="margin-top: 8px; padding: 6px 12px;" onclick="copyCodexUrl()">📋 複製連結</button>
+            </div>
+            <div id="codex-paste-area" style="display:none; margin-top: 12px;">
+              <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 6px;">步驟 2：授權完成後貼回完整網址：</p>
+              <textarea id="codex-redirect-input" rows="3" style="width:100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border-card); color: var(--text-primary); padding: 8px; border-radius: 4px; font-size: 0.85rem; resize: vertical;" placeholder="貼上完整 redirect URL..."></textarea>
+              <button id="btn-submit-codex" class="btn-primary" style="margin-top: 8px; width: 100%;" onclick="submitCodexCallback()">✅ 確認授權完成</button>
+            </div>
+            <div id="codex-error" class="error-msg" style="display:none; margin-top: 8px;"></div>
+            <div id="codex-success" style="display:none; color: #4ade80; margin-top: 8px; font-weight: bold;">✅ Codex 授權成功！即將進入完成頁面...</div>
+          </div>
+        </div>
+        <div id="codex-skip-area" style="display:none; text-align: center; padding: 20px;">
+          <p style="color: var(--text-secondary);">將使用 API Key 模式</p>
+        </div>
+      </div>
+
+      <!-- Step 3: Success Pending Activation -->
+      <div id="step-3" class="card" style="display:none;">
+        <div class="success-header">
+          <span class="success-icon">🎉</span>
+          <h2>專屬秘書建立成功！</h2>
+        </div>
+        <div style="text-align: center;">
+          <div class="status-badge provisioned">
+            ⏳ 正在等待系統分配算力與啟動容器
+          </div>
+          <p style="color: var(--text-secondary); margin-bottom: 30px; font-size: 1.05rem;">
+            管理員激活後，您就可以直接在飛書聯絡人中搜尋 <strong><span id="finish-bot-name" style="color: #fff;"></span></strong> 開始派發任務。
+          </p>
+          <div style="text-align: left; background: rgba(0,0,0,0.3); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-card); margin-bottom: 16px;">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">AI 授權狀態</p>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+              <span style="color: var(--text-secondary); font-size: 0.9rem;">授權模式</span>
+              <strong id="finish-auth-mode" style="color:#93c5fd;">待確認</strong>
+            </div>
+            <div id="finish-auth-detail" style="color: var(--text-muted); font-size: 0.85rem;"></div>
+          </div>
+          <div style="text-align: left; background: rgba(0,0,0,0.3); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-card); margin-bottom: 24px;">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">如果您打算在獨立主機 (Standalone) 自行部署此機器人，請複製以下憑證：</p>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="color: var(--text-secondary); font-size: 0.9rem;">App ID</span>
+              <strong id="finish-app-id" style="color: #a5b4fc; font-family: monospace; user-select: all;">加載中...</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-secondary); font-size: 0.9rem;">App Secret</span>
+              <strong id="finish-app-secret" style="color: #a5b4fc; font-family: monospace; user-select: all;">加載中...</strong>
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="location.reload()">為其他部門建立</button>
+        </div>
+      </div>
+    </section>
+  </div> <!-- End of Landing Sections Wrapper -->
+
+  <!-- Dashboard Section (User logged in view) -->
+  <section id="dashboard-view" class="dashboard-view fade-in">
+    <div class="dashboard-header">
+      <div>
+        <div class="badge" style="margin-bottom: 12px;">🏢 企業實例管理</div>
+        <h2 class="dashboard-title">專屬秘書控制台</h2>
+      </div>
+      <button class="btn-secondary" onclick="showToast('資料已更新')">↻ 重新整理</button>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- 狀態面板 -->
+      <div class="dash-card">
+        <h3 class="dash-card-title">🤖 運行狀態</h3>
+        <div class="status-active">
+          <span class="status-dot"></span> 正常運行中
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">
+          已連續運行: <strong style="color: #e8ecf8;">12 天 4 小時</strong>
+        </p>
+        <div class="dash-actions">
+          <a href="#" class="btn-primary btn-sm" style="flex: 1;" onclick="showToast('即將開啟飛書對話...')">💬 前往對話</a>
+          <button class="btn-secondary btn-sm" onclick="showToast('已送出重啟指令')">🔄 重啟</button>
+        </div>
+      </div>
+
+      <!-- 基本資訊 -->
+      <div class="dash-card">
+        <h3 class="dash-card-title">📄 秘書檔案</h3>
+        <div class="info-row">
+          <span class="info-label">秘書名稱</span>
+          <span class="info-value">張總的商務助理</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Agent ID</span>
+          <span class="info-value" style="font-family: monospace;">user-zhang-a8b2</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">綁定平台</span>
+          <span class="info-value">飛書 (Feishu)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">核心大腦</span>
+          <span class="info-value" style="color: #a855f7;">GPT-4o (旗艦版)</span>
+        </div>
+      </div>
+
+      <!-- 算力與預算 -->
+      <div class="dash-card">
+        <h3 class="dash-card-title">📊 本月算力用量</h3>
+        <div style="font-size: 1.8rem; font-weight: 700; color: #fff;">
+          $5.40 <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ $20.00 USD</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill"></div>
+        </div>
+        <div class="info-row" style="border: none;">
+          <span class="info-label" style="font-size: 0.8rem;">已使用約 27% 預算額度</span>
+        </div>
+        <div class="dash-actions">
+          <button class="btn-secondary btn-sm" style="width: 100%;" onclick="showToast('用量明細功能開發中')">📄 查看使用明細</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Login Modal -->
+  <div id="login-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeLoginModal()">&times;</button>
+      <h2 style="font-size: 1.5rem; margin-bottom: 8px;">登入控制台</h2>
+      <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 24px;">請輸入您的 Agent ID 或註冊信箱以管理您的專屬秘書。</p>
+      
+      <form id="mock-login-form">
+        <div class="form-group">
+          <label>帳號 / Agent ID</label>
+          <input type="text" id="login-username" placeholder="例如: user-zhang-a8b2" required>
+        </div>
+        <div class="form-group">
+          <label>密碼</label>
+          <input type="password" id="login-password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 8px;">安全登入</button>
+      </form>
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="#" style="color: #a5b4fc; font-size: 0.85rem; text-decoration: none;" onclick="showToast('請聯繫企業管理員重置密碼')">忘記密碼？</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    &copy; 2026 OpenClaw Enterprise AI. All rights reserved.
+  </footer>
+
+  <script src="/api.js"></script>
+  <script src="/assets/app.js"></script>
+  <script>
+    // ─── State ───────────────────────────────────────────────────
+    let currentUserId = null;
+    let pollCtrl = null;
+
+    // ─── Helpers (expose globally for inline onclick handlers) ───
+    const showLoginModal = () => $('#login-modal').classList.add('show');
+    const closeLoginModal = () => $('#login-modal').classList.remove('show');
+    // logout is already defined in app.js (function logout(reason))
+    window.logout = logout; // ensure onclick="logout()" works
+    window.showToast = OpenClawApp.showToast; // expose for onclick="showToast(...)"
+
+    // ─── Bootstrap ───────────────────────────────────────────────
+    
+    // ─── Onboarding Cache (for resuming after interruption) ───────
+    const ONBOARDING_CACHE_KEY = 'openclaw_onboarding_v1';
+
+    function getOnboardingCache() {
+      try {
+        const raw = localStorage.getItem(ONBOARDING_CACHE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    }
+
+    function saveOnboardingCache(step, data) {
+      const cache = getOnboardingCache() || { currentStep: 0, steps: {} };
+      cache.currentStep = Math.max(cache.currentStep, step);
+      cache.steps[step] = { ...data, _ts: Date.now() };
+      localStorage.setItem(ONBOARDING_CACHE_KEY, JSON.stringify(cache));
+    }
+
+    function clearOnboardingCache() {
+      localStorage.removeItem(ONBOARDING_CACHE_KEY);
+    }
+
+    window.clearOnboardingCache = clearOnboardingCache;
+
+    function resumeOnboarding() {
+      const cache = getOnboardingCache();
+      if (!cache) return false;
+      if (cache.currentStep >= 1 && cache.steps[1]) {
+        const d = cache.steps[1];
+        currentUserId = d.id;
+        window.__openclawUserById = { [d.id]: { agent_id: d.agentId } };
+        window.__openclawFeishuCredentials = { feishuAppId: d.feishuAppId, feishuAppSecret: d.feishuAppSecret };
+      }
+      return cache.currentStep;
+    }
+
+    // Show resume banner if cache exists
+    function showResumeBanner() {
+      const cache = getOnboardingCache();
+      if (!cache || cache.currentStep === 0) return;
+      let banner = document.getElementById('resume-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'resume-banner';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:linear-gradient(90deg,#6366f1,#8b5cf6);color:white;text-align:center;padding:12px 16px;z-index:9999;font-size:0.9rem;display:flex;align-items:center;justify-content:center;gap:16px;';
+        document.body.prepend(banner);
+      }
+      const stepNames = { 1: '設定助手', 2: '飛書授權', 2.5: 'AI 授權', 3: '完成' };
+      banner.innerHTML = `📋 您有未完成的安裝流程（停留在「${stepNames[cache.currentStep] || '某步驟'}」）&nbsp;<button onclick="handleResume()" style="background:white;color:#6366f1;border:none;padding:6px 16px;border-radius:20px;font-weight:600;cursor:pointer;">繼續</button>&nbsp;<button onclick="handleRestart()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;cursor:pointer;">重新開始</button>`;
+    }
+
+    function handleResume() {
+      const cache = getOnboardingCache();
+      if (!cache) return;
+      document.getElementById('resume-banner')?.remove();
+      const step = resumeOnboarding();
+      if (step >= 2 && cache.steps[1]) {
+        $('#step-1').style.display = 'none';
+        $('#step-2').style.display = 'block';
+        const d = cache.steps[1];
+        $('#qr-image').src = d.qrDataUrl || '';
+        bindVerificationUrl(d.verificationUrl || '');
+        if (step >= 2.5 && cache.steps[2]) {
+          $('#step-2').style.display = 'none';
+          $('#step-2b').style.display = 'block';
+          if (step >= 3) { $('#step-2b').style.display = 'none'; $('#step-3').style.display = 'block'; }
+        }
+        window.scrollTo(0, 0);
+      }
+    }
+
+    function handleRestart() {
+      clearOnboardingCache();
+      document.getElementById('resume-banner')?.remove();
+      document.getElementById('step-1').style.display = 'block';
+      document.getElementById('step-2').style.display = 'none';
+      document.getElementById('step-2b').style.display = 'none';
+      document.getElementById('step-3').style.display = 'none';
+      currentUserId = null;
+      window.__openclawUserById = {};
+      window.__openclawFeishuCredentials = null;
+      document.getElementById('register-form').reset();
+      window.scrollTo(0, 0);
+    }
+
+    window.handleResume = handleResume;
+    window.handleRestart = handleRestart;
+
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      showResumeBanner();
+      if (OpenClawApp.isLoggedIn()) {
+        await loadDashboard();
+      }
+    });
+
+    // ─── Login Form ──────────────────────────────────────────────
+    document.getElementById('mock-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const usernameInput = $('#login-username').value;
+      const passwordInput = $('#login-password').value;
+      const btn = e.target.querySelector('button[type="submit"]');
+      const originalText = btn.textContent;
+      btn.textContent = '登入中...';
+      btn.disabled = true;
+
+      try {
+        // Auth service is on port 3001
+        const loginUrl = window.location.protocol + '//' + window.location.hostname + ':3001/api/auth/user-login';
+        const res = await fetch(loginUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: usernameInput, password: passwordInput })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '登入失敗');
+
+        localStorage.setItem('user_token', data.token);
+        closeLoginModal();
+        OpenClawApp.showToast('登入成功！正在載入您的專屬秘書資訊...');
+        await loadDashboard();
+      } catch (err) {
+        OpenClawApp.showToast(err.message);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // ─── Load Dashboard (GET /api/user/me) ─────────────────────
+    async function loadDashboard() {
+      try {
+        const api = new OpenClawAPI();
+        api.setToken(localStorage.getItem('user_token'));
+        const data = await api.getMe();
+
+        // Nav
+        $('#nav-login-btn').style.display = 'none';
+        $('#nav-user-menu').style.display = 'flex';
+        $('#nav-username').textContent = data.userNickname || data.agentId.split('-')[1];
+
+        // Dashboard fields
+        const dbView = $('#dashboard-view');
+        dbView.querySelector('.info-row:nth-child(2) .info-value').textContent = data.botNickname;
+        dbView.querySelector('.info-row:nth-child(3) .info-value').textContent = data.agentId;
+
+        const statusEl = dbView.querySelector('.status-active');
+        if (data.isRunning) {
+          statusEl.innerHTML = '<span class="status-dot"></span> 正常運行中';
+          statusEl.style.color = 'var(--success)';
+        } else {
+          statusEl.innerHTML = '<span class="status-dot" style="background:var(--text-muted); box-shadow:none; animation:none;"></span> 已停止';
+          statusEl.style.color = 'var(--text-muted)';
+        }
+
+        const budgetEl = dbView.querySelector('.dash-card:nth-child(3) > div:nth-child(2)');
+        budgetEl.innerHTML = `$0.00 <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ $${data.budget || 20}.00 USD</span>`;
+        dbView.querySelector('.progress-bar-fill').style.width = '0%';
+        dbView.querySelector('.dash-card:nth-child(3) .info-label').textContent = '尚無用量資料';
+
+        $('#landing-sections').style.display = 'none';
+        $('#dashboard-view').style.display = 'block';
+        window.scrollTo(0, 0);
+      } catch (err) {
+        OpenClawApp.showToast(err.message);
+      }
+    }
+
+    // ─── Verification URL (copy link) ───────────────────────────
+    function bindVerificationUrl(url) {
+      $('#verification-link-btn').href = url;
+      $('#verification-link-text').textContent = url;
+      $('#copy-link-btn').onclick = async () => {
+        const ok = await OpenClawApp.copyToClipboard(url);
+        OpenClawApp.showToast(ok ? '授權連結已複製到剪貼簿！' : '複製失敗，請手動選取');
+      };
+    }
+
+    // ─── Registration Form (POST /api/register) ──────────────────
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('#submit-btn');
+      const err = $('#register-error');
+      err.style.display = 'none';
+      btn.disabled = true;
+      btn.querySelector('.btn-text').style.display = 'none';
+      btn.querySelector('.btn-loading').style.display = 'inline-flex';
+
+      try {
+        const api = new OpenClawAPI();
+        const data = await api.register({
+          userNickname: $('#user-nickname').value,
+          botNickname: $('#bot-nickname').value
+        });
+        if (!data.success) throw new Error(data.error);
+
+        // Step 2: Show QR + link
+        $('#step-1').style.display = 'none';
+        $('#step-2').style.display = 'block';
+        $('#step-2').classList.add('fade-in');
+        $('#qr-image').src = data.qrDataUrl;
+        bindVerificationUrl(data.verificationUrl);
+        currentUserId = data.id;
+        window.__openclawUserById = window.__openclawUserById || {};
+        window.__openclawUserById[currentUserId] = { agent_id: data.agentId };
+        saveOnboardingCache(1, { id: data.id, agentId: data.agentId, qrDataUrl: data.qrDataUrl, verificationUrl: data.verificationUrl, userNickname: $('#user-nickname').value, botNickname: $('#bot-nickname').value });
+        $('#step-2').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Start polling via RegistrationPoll helper
+        startPolling();
+
+      } catch (e) {
+        err.textContent = e.message;
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.querySelector('.btn-text').style.display = 'inline';
+        btn.querySelector('.btn-loading').style.display = 'none';
+      }
+    });
+
+    // ─── Poll Registration (GET /api/register/poll/:id) ──────────
+    function startPolling() {
+      if (pollCtrl) pollCtrl.stop();
+
+      pollCtrl = new OpenClawApp.RegistrationPoll(currentUserId, {
+        onCompleted: (data) => {
+          // Store Feishu credentials for later
+          window.__openclawFeishuCredentials = data;
+          // Show Step 2b: Codex OAuth choice
+          $('#step-2').style.display = 'none';
+          $('#step-2b').style.display = 'block';
+          $('#step-2b').classList.add('fade-in');
+          window.__openclawUserById = window.__openclawUserById || {};
+          const cachedAgentId = window.__openclawUserById[currentUserId]?.agent_id || getOnboardingCache()?.steps?.[1]?.agentId || null;
+          if (cachedAgentId) window.__openclawUserById[currentUserId] = { agent_id: cachedAgentId };
+          saveOnboardingCache(2, { ...data, agentId: cachedAgentId });
+        },
+        onDenied: (data) => {
+          $('#qr-overlay').style.display = 'flex';
+          $('#poll-status').innerHTML = `<span style="color:var(--error)">❌ ${data.message || '授權被拒絕'}</span>`;
+          $('#poll-status').style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          $('#poll-status').style.background = 'rgba(239, 68, 68, 0.1)';
+        },
+        intervalMs: 3000,
+      });
+
+      pollCtrl.start();
+    }
+
+    // Listen for auth errors from api.js
+    window.addEventListener('api:auth-error', () => {
+      logout();
+      showLoginModal();
+    });
+
+    // ─── Codex OAuth ──────────────────────────────────────────────
+    let codexOAuthState = null;
+    let selectedAuthMode = 'openai-api-key';
+
+    function setAuthModeNote(text, tone = 'neutral') {
+      const el = document.getElementById('auth-mode-note');
+      if (!el) return;
+      el.style.display = 'block';
+      el.textContent = text;
+      const colors = {
+        success: { border: 'rgba(74, 222, 128, 0.35)', bg: 'rgba(34,197,94,0.10)', color: '#86efac' },
+        warn: { border: 'rgba(245, 158, 11, 0.35)', bg: 'rgba(245,158,11,0.10)', color: '#fcd34d' },
+        neutral: { border: 'var(--border-card)', bg: 'rgba(0,0,0,0.22)', color: 'var(--text-secondary)' }
+      };
+      const c = colors[tone] || colors.neutral;
+      el.style.borderColor = c.border;
+      el.style.background = c.bg;
+      el.style.color = c.color;
+    }
+
+    function getCodexOAuthUrl() {
+      if (!currentUserId) { alert('請先完成飛書授權'); return; }
+      const agentId = window.__openclawUserById?.[currentUserId]?.agent_id || getOnboardingCache()?.steps?.[1]?.agentId;
+      const btn = document.getElementById('btn-get-codex-url');
+      if (btn) { btn.disabled = true; btn.textContent = '產生中...'; }
+      fetch('/api/codex/oauth-url?agentId=' + encodeURIComponent(agentId))
+        .then(r => r.json())
+        .then(data => {
+          if (!data.authUrl) throw new Error(data.error || 'Failed');
+          codexOAuthState = { agentId, authUrl: data.authUrl, state: data.state };
+          const urlEl = document.getElementById('codex-auth-url');
+          if (urlEl) { urlEl.value = data.authUrl; urlEl.style.display = 'block'; }
+          const pasteEl = document.getElementById('codex-paste-area');
+          if (pasteEl) pasteEl.style.display = 'block';
+          const btn2 = document.getElementById('btn-get-codex-url');
+          if (btn2) btn2.textContent = '🔗 連結已產生';
+        })
+        .catch(e => {
+          const errEl = document.getElementById('codex-error');
+          if (errEl) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+          const btn2 = document.getElementById('btn-get-codex-url');
+          if (btn2) { btn2.disabled = false; btn2.textContent = '🔗 重新取得'; }
+        });
+    }
+
+    function copyCodexUrl() {
+      const url = document.getElementById('codex-auth-url')?.value;
+      if (!url) return;
+      if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => showToast('已複製！'));
+    }
+
+    function submitCodexCallback() {
+      const redirectUrl = document.getElementById('codex-redirect-input')?.value?.trim();
+      if (!redirectUrl) { alert('請先貼上授權後的網址'); return; }
+      const btn = document.getElementById('btn-submit-codex');
+      if (btn) { btn.disabled = true; btn.textContent = '驗證中...'; }
+      fetch('/api/codex/oauth/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ redirectUrl, state: codexOAuthState?.state }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.success) throw new Error(data.error || 'Failed');
+          selectedAuthMode = 'codex-cli';
+          setAuthModeNote('✅ Codex 已授權完成，等待管理員激活後即可使用。', 'success');
+          saveOnboardingCache(2.5, { codexDone: true, authMode: 'codex-cli' });
+          document.getElementById('codex-paste-area').style.display = 'none';
+          document.getElementById('codex-url-display').style.display = 'none';
+          document.getElementById('codex-success').style.display = 'block';
+          const sb = document.getElementById('btn-submit-codex');
+          if (sb) sb.style.display = 'none';
+          const gb = document.getElementById('btn-get-codex-url');
+          if (gb) gb.style.display = 'none';
+          setTimeout(proceedToStep3, 1500);
+        })
+        .catch(e => {
+          const errEl = document.getElementById('codex-error');
+          if (errEl) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+          if (btn) { btn.disabled = false; btn.textContent = '✅ 確認授權完成'; }
+        });
+    }
+
+    function startCodexOAuth() {
+      const area = document.getElementById('codex-oauth-area');
+      const skip = document.getElementById('codex-skip-area');
+      if (area) area.style.display = 'block';
+      if (skip) skip.style.display = 'none';
+      selectedAuthMode = 'codex-cli';
+      setAuthModeNote('正在準備 Codex 授權流程… 完成後會直接標記為可用。', 'neutral');
+      getCodexOAuthUrl();
+    }
+
+    function skipCodexOAuth() {
+      const area = document.getElementById('codex-oauth-area');
+      const skip = document.getElementById('codex-skip-area');
+      if (area) area.style.display = 'none';
+      if (skip) skip.style.display = 'block';
+      selectedAuthMode = 'openai-api-key';
+      setAuthModeNote('ℹ️ 目前選擇 API Key 模式；管理員激活時會自動配置，不影響後續建立。', 'warn');
+      proceedToStep3();
+    }
+
+    function proceedToStep3() {
+      var s1 = document.getElementById('step-1'); if (s1) s1.style.display = 'none';
+      var s2 = document.getElementById('step-2'); if (s2) s2.style.display = 'none';
+      var s2b = document.getElementById('step-2b'); if (s2b) s2b.style.display = 'none';
+      saveOnboardingCache(3, { authMode: selectedAuthMode });
+      var s3 = document.getElementById('step-3');
+      if (s3) { s3.style.display = 'block'; s3.classList.add('fade-in'); }
+      var nameEl = document.getElementById('finish-bot-name');
+      var nickEl = document.getElementById('bot-nickname');
+      if (nameEl && nickEl) nameEl.textContent = nickEl.value;
+      var authModeEl = document.getElementById('finish-auth-mode');
+      var authDetailEl = document.getElementById('finish-auth-detail');
+      if (authModeEl) authModeEl.textContent = selectedAuthMode === 'codex-cli' ? 'Codex 訂閱授權' : 'API Key 模式';
+      if (authDetailEl) authDetailEl.textContent = selectedAuthMode === 'codex-cli' ? '您的 OAuth 憑證已寫入實例目錄；管理員激活時會直接套用。' : '管理員激活時會自動分配 API Key，不需要您額外處理。';
+      if (window.__openclawFeishuCredentials) {
+        var c = window.__openclawFeishuCredentials;
+        var a = document.getElementById('finish-app-id'); if (a) a.textContent = c.feishuAppId || '未提供';
+        var s = document.getElementById('finish-app-secret'); if (s) s.textContent = c.feishuAppSecret || '未提供';
+      }
+    }
+  </script>
+</body>
+</html>

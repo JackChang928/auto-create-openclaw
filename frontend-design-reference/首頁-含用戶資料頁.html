@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClaw - 企業級專屬 AI 數位秘書</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===================================================================
+       OpenClaw Auto-Create v4 — SaaS Landing Page Theme
+       =================================================================== */
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-card: rgba(15, 20, 40, 0.7);
+      --bg-input: rgba(20, 25, 50, 0.6);
+      --border-card: rgba(100, 120, 200, 0.15);
+      --border-input: rgba(100, 120, 200, 0.25);
+      --border-focus: rgba(120, 140, 255, 0.6);
+      --text-primary: #e8ecf8;
+      --text-secondary: #8892b0;
+      --text-muted: #5a6380;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+      --accent-glow: rgba(99, 102, 241, 0.3);
+      --success: #10b981;
+      --error: #ef4444;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-xs: 6px;
+      --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border-card);
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
+    body { font-family: var(--font); background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; position: relative; line-height: 1.6; }
+
+    /* Blobs Background */
+    .bg-blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.15; animation: blobFloat 20s ease-in-out infinite; }
+    .blob-1 { width: 600px; height: 600px; background: #6366f1; top: -200px; left: -100px; animation-delay: 0s; }
+    .blob-2 { width: 500px; height: 500px; background: #8b5cf6; bottom: -150px; right: -100px; animation-delay: -7s; animation-duration: 25s; }
+    .blob-3 { width: 400px; height: 400px; background: #a855f7; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -14s; animation-duration: 30s; }
+
+    @keyframes blobFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(50px, -30px) scale(1.1); }
+      50% { transform: translate(-30px, 50px) scale(0.95); }
+      75% { transform: translate(30px, 20px) scale(1.05); }
+    }
+
+    /* Navbar */
+    .navbar { position: sticky; top: 0; z-index: 50; padding: 16px 5%; background: rgba(10, 14, 26, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-card); }
+    .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-icon { font-size: 1.8rem; filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.4)); }
+    .logo-text { font-size: 1.5rem; font-weight: 700; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em; }
+
+    /* Buttons */
+    .btn-primary { padding: 16px 24px; background: var(--accent-gradient); border: none; border-radius: var(--radius-sm); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform var(--transition), box-shadow var(--transition); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:hover { box-shadow: 0 4px 20px var(--accent-glow); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-secondary { padding: 10px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer; transition: background var(--transition); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+    .btn-sm { padding: 8px 16px; font-size: 0.9rem; }
+
+    /* Hero Section */
+    .hero { position: relative; z-index: 1; text-align: center; padding: 100px 20px 60px; max-width: 800px; margin: 0 auto; }
+    .badge { display: inline-block; padding: 6px 16px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); color: #a5b4fc; border-radius: 30px; font-size: 0.85rem; font-weight: 500; margin-bottom: 24px; letter-spacing: 0.5px; }
+    .hero-title { font-size: 3.5rem; font-weight: 700; line-height: 1.2; margin-bottom: 24px; letter-spacing: -0.03em; }
+    .text-gradient { background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-subtitle { font-size: 1.15rem; color: var(--text-secondary); margin-bottom: 40px; font-weight: 300; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+    /* Features Section */
+    .features { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto 80px; padding: 0 5%; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+    .feature-card { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius); padding: 32px; backdrop-filter: blur(10px); transition: transform var(--transition); }
+    .feature-card:hover { transform: translateY(-5px); border-color: rgba(120, 140, 255, 0.4); }
+    .feature-icon { font-size: 2.5rem; margin-bottom: 20px; }
+    .feature-card h3 { font-size: 1.3rem; margin-bottom: 12px; color: #fff; }
+    .feature-card p { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; }
+
+    /* Onboarding Section */
+    .onboarding { position: relative; z-index: 1; max-width: 600px; margin: 0 auto 100px; padding: 0 20px; }
+    .onboarding-header { text-align: center; margin-bottom: 40px; }
+    .onboarding-header h2 { font-size: 2rem; margin-bottom: 10px; }
+    .onboarding-header p { color: var(--text-secondary); }
+
+    .card { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius); padding: 40px; box-shadow: var(--shadow-card); backdrop-filter: blur(20px); }
+    .card-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 28px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-card); padding-bottom: 16px; }
+    .step-num { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: rgba(99,102,241,0.2); color: #a5b4fc; border-radius: 50%; font-size: 0.95rem; border: 1px solid rgba(99,102,241,0.4); }
+
+    /* Forms */
+    .form-group { margin-bottom: 24px; }
+    .form-group label { display: block; font-size: 0.9rem; font-weight: 500; color: #e8ecf8; margin-bottom: 10px; }
+    .form-group input { width: 100%; padding: 14px 16px; background: var(--bg-input); border: 1px solid var(--border-input); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 1rem; font-family: var(--font); outline: none; transition: all var(--transition); }
+    .form-group input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-glow); background: rgba(30, 35, 60, 0.8); }
+    .input-hint { display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; }
+
+    .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .spinner-sm { width: 14px; height: 14px; border-width: 2px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* QR Code Section */
+    .qr-container { display: flex; gap: 32px; align-items: center; }
+    .qr-box { position: relative; width: 200px; height: 200px; background: #fff; border-radius: var(--radius-sm); padding: 10px; flex-shrink: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .qr-box img { width: 100%; height: 100%; object-fit: contain; }
+    .qr-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border-radius: var(--radius-sm); }
+    .qr-expired { text-align: center; }
+    .qr-expired p { color: #fca5a5; font-size: 0.9rem; margin-bottom: 12px; }
+
+    .qr-instructions { flex: 1; }
+    .qr-instructions h3 { font-size: 1.1rem; margin-bottom: 16px; color: #fff; }
+    .qr-instructions ol { padding-left: 20px; display: flex; flex-direction: column; gap: 10px; color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 24px; }
+    .qr-instructions li::marker { color: #6366f1; font-weight: bold; }
+    .poll-status { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; background: rgba(99,102,241,0.1); border-radius: 30px; font-size: 0.9rem; color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2); }
+    .link-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+    .link-box { margin-top: 16px; padding: 14px; border-radius: var(--radius-xs); background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); word-break: break-all; font-size: 0.85rem; color: var(--text-secondary); }
+
+    /* Success */
+    .success-header { text-align: center; margin-bottom: 30px; }
+    .success-icon { font-size: 3.5rem; display: block; margin-bottom: 16px; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+    .success-header h2 { font-size: 1.6rem; background: linear-gradient(135deg, #34d399, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .status-badge { display: inline-block; padding: 8px 18px; border-radius: 30px; font-size: 0.95rem; font-weight: 500; margin-bottom: 24px; }
+    .status-badge.provisioned { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    /* Custom Toast */
+    .toast-message { position: fixed; bottom: -50px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #f8fafc; padding: 12px 24px; border-radius: 30px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 9999; opacity: 0; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); border: 1px solid rgba(255,255,255,0.1); }
+    .toast-message.show { bottom: 30px; opacity: 1; }
+
+    /* Modal (Login) */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 100; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+    .modal-overlay.show { display: flex; opacity: 1; }
+    .modal-content { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius); padding: 32px; width: 100%; max-width: 400px; position: relative; box-shadow: var(--shadow-card); transform: translateY(20px); transition: transform 0.3s; }
+    .modal-overlay.show .modal-content { transform: translateY(0); }
+    .modal-close { position: absolute; top: 16px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: color 0.2s; }
+    .modal-close:hover { color: #fff; }
+
+    /* Dashboard Section */
+    .dashboard-view { position: relative; z-index: 1; max-width: 1000px; margin: 40px auto 100px; padding: 0 20px; display: none; }
+    .dashboard-header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border-card); padding-bottom: 20px; }
+    .dashboard-title { font-size: 2rem; font-weight: 700; color: #fff; }
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+    .dash-card { background: rgba(20, 25, 50, 0.4); border: 1px solid var(--border-card); border-radius: var(--radius-sm); padding: 24px; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .dash-card-title { font-size: 1.05rem; color: var(--text-secondary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    
+    .status-active { display: inline-flex; align-items: center; gap: 12px; font-size: 1.5rem; font-weight: 600; color: var(--success); margin-bottom: 8px; }
+    .status-dot { width: 12px; height: 12px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+    
+    .progress-bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin: 16px 0 8px; }
+    .progress-bar-fill { height: 100%; background: var(--accent-gradient); width: 27%; border-radius: 4px; }
+    
+    .info-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; border-bottom: 1px dashed rgba(255,255,255,0.05); padding-bottom: 8px; }
+    .info-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .info-label { color: var(--text-muted); }
+    .info-value { color: #e8ecf8; font-weight: 500; }
+    .dash-actions { display: flex; gap: 10px; margin-top: auto; padding-top: 16px; }
+
+    /* Utils */
+    .fade-in { animation: fadeIn 0.5s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    .error-msg { margin-top: 16px; padding: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-xs); color: #fca5a5; font-size: 0.9rem; text-align: center; }
+
+    /* Footer */
+    footer { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid rgba(255,255,255,0.05); position: relative; z-index: 1; }
+
+    @media (max-width: 768px) {
+      .hero-title { font-size: 2.5rem; }
+      .qr-container { flex-direction: column; text-align: center; }
+      .qr-instructions ol { text-align: left; }
+      .link-actions { flex-direction: column; }
+      .link-actions a, .link-actions button { width: 100%; }
+      .card { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="logo">
+        <span class="logo-icon">🦞</span>
+        <span class="logo-text">OpenClaw</span>
+      </a>
+      <div>
+        <!-- 未登入狀態按鈕 -->
+        <button type="button" id="nav-login-btn" class="btn-secondary btn-sm" onclick="showLoginModal()">用戶登入</button>
+        <!-- 已登入狀態選單 (預設隱藏) -->
+        <div id="nav-user-menu" style="display: none; align-items: center; gap: 16px;">
+          <span style="font-size: 0.9rem; color: var(--text-secondary);">歡迎, <strong id="nav-username" style="color: #fff;">User</strong></span>
+          <button type="button" class="btn-secondary btn-sm" onclick="logout()">登出</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Landing Sections Wrapper (用來在登入後隱藏) -->
+  <div id="landing-sections">
+    <!-- Hero Section -->
+    <header class="hero">
+      <!-- Step 3: Success Pending Activation -->
+      <div id="step-3" class="card" style="display:none;">
+        <div class="success-header">
+          <span class="success-icon">🎉</span>
+          <h2>專屬秘書建立成功！</h2>
+        </div>
+        <div style="text-align: center;">
+          <div class="status-badge provisioned">
+            ⏳ 正在等待系統分配算力與啟動容器
+          </div>
+          <p style="color: var(--text-secondary); margin-bottom: 30px; font-size: 1.05rem;">
+            管理員激活後，您就可以直接在飛書聯絡人中搜尋 <strong><span id="finish-bot-name" style="color: #fff;"></span></strong> 開始派發任務。
+          </p>
+          <button class="btn-secondary" onclick="location.reload()">為其他部門建立</button>
+        </div>
+      </div>
+    </section>
+  </div> <!-- End of Landing Sections Wrapper -->
+
+  <!-- Dashboard Section (User logged in view) -->
+  <section id="dashboard-view" class="dashboard-view fade-in">
+    <div class="dashboard-header">
+      <div>
+        <div class="badge" style="margin-bottom: 12px;">🏢 企業實例管理</div>
+        <h2 class="dashboard-title">專屬秘書控制台</h2>
+      </div>
+      <button class="btn-secondary" onclick="showToast('資料已更新')">↻ 重新整理</button>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- 狀態面板 -->
+      <div class="dash-card">
+        <h3 class="dash-card-title">🤖 運行狀態</h3>
+        <div class="status-active">
+          <span class="status-dot"></span> 正常運行中
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">
+          已連續運行: <strong style="color: #e8ecf8;">12 天 4 小時</strong>
+        </p>
+        <div class="dash-actions">
+          <a href="#" class="btn-primary btn-sm" style="flex: 1;" onclick="showToast('即將開啟飛書對話...')">💬 前往對話</a>
+          <button class="btn-secondary btn-sm" onclick="showToast('已送出重啟指令')">🔄 重啟</button>
+        </div>
+      </div>
+
+      <!-- 基本資訊 -->
+      <div class="dash-card">
+        <h3 class="dash-card-title">📄 秘書檔案</h3>
+        <div class="info-row">
+          <span class="info-label">秘書名稱</span>
+          <span class="info-value">張總的商務助理</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Agent ID</span>
+          <span class="info-value" style="font-family: monospace;">user-zhang-a8b2</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">綁定平台</span>
+          <span class="info-value">飛書 (Feishu)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">核心大腦</span>
+          <span class="info-value" style="color: #a855f7;">GPT-4o (旗艦版)</span>
+        </div>
+      </div>
+
+      <!-- 算力與預算 -->
+      <div class="dash-card">
+        <h3 class="dash-card-title">📊 本月算力用量</h3>
+        <div style="font-size: 1.8rem; font-weight: 700; color: #fff;">
+          $5.40 <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ $20.00 USD</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill"></div>
+        </div>
+        <div class="info-row" style="border: none;">
+          <span class="info-label" style="font-size: 0.8rem;">已使用約 27% 預算額度</span>
+        </div>
+        <div class="dash-actions">
+          <button class="btn-secondary btn-sm" style="width: 100%;" onclick="showToast('用量明細功能開發中')">📄 查看使用明細</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Login Modal -->
+  <div id="login-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeLoginModal()">&times;</button>
+      <h2 style="font-size: 1.5rem; margin-bottom: 8px;">登入控制台</h2>
+      <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 24px;">請輸入您的 Agent ID 或註冊信箱以管理您的專屬秘書。</p>
+      
+      <form id="mock-login-form">
+        <div class="form-group">
+          <label>帳號 / Agent ID</label>
+          <input type="text" id="login-username" placeholder="例如: user-zhang-a8b2" required>
+        </div>
+        <div class="form-group">
+          <label>密碼</label>
+          <input type="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 8px;">安全登入</button>
+      </form>
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="#" style="color: #a5b4fc; font-size: 0.85rem; text-decoration: none;" onclick="showToast('請聯繫企業管理員重置密碼')">忘記密碼？</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    &copy; 2026 OpenClaw Enterprise AI. All rights reserved.
+  </footer>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    let currentUserId = null;
+    let pollInterval = null;
+    let verificationUrl = null;
+
+    // ----- UI Toggle & Login Logic -----
+    function showLoginModal() {
+      $('#login-modal').classList.add('show');
+    }
+
+    function closeLoginModal() {
+      $('#login-modal').classList.remove('show');
+    }
+
+    // Mock Login action
+    $('#mock-login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const usernameInput = $('#login-username').value;
+      const displayUsername = usernameInput.split('-')[1] || usernameInput || 'User';
+      
+      closeLoginModal();
+      showToast('登入成功！正在載入您的專屬秘書資訊...');
+      
+      setTimeout(() => {
+        // Toggle UI states
+        $('#nav-login-btn').style.display = 'none';
+        $('#nav-user-menu').style.display = 'flex';
+        $('#nav-username').textContent = displayUsername;
+        
+        $('#landing-sections').style.display = 'none';
+        $('#dashboard-view').style.display = 'block';
+        window.scrollTo(0, 0);
+      }, 800);
+    });
+
+    function logout() {
+      $('#nav-user-menu').style.display = 'none';
+      $('#nav-login-btn').style.display = 'inline-flex';
+      
+      $('#dashboard-view').style.display = 'none';
+      $('#landing-sections').style.display = 'block';
+      showToast('已登出系統');
+    }
+
+    // Custom Toast Notification Function
+    function showToast(msg) {
+      const existingToast = document.querySelector('.toast-message');
+      if (existingToast) existingToast.remove();
+      
+      const toast = document.createElement('div');
+      toast.className = 'toast-message';
+      toast.innerText = msg;
+      document.body.appendChild(toast);
+      
+      // Trigger animation
+      setTimeout(() => toast.classList.add('show'), 10);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400); // Wait for transition
+      }, 3000);
+    }
+
+    async function parseJsonResponse(res) {
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) return res.json();
+      const text = await res.text();
+      throw new Error(`伺服器回傳非 JSON 響應（HTTP ${res.status}）` + (text ? '，請重新整理後再試。' : ''));
+    }
+
+    function bindVerificationUrl(url) {
+      verificationUrl = url;
+      $('#verification-link-btn').href = url;
+      $('#verification-link-text').textContent = url;
+      $('#copy-link-btn').onclick = () => {
+        try {
+          // Fallback for older browsers / non-secure contexts
+          const textArea = document.createElement("textarea");
+          textArea.value = url;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          textArea.remove();
+          
+          showToast('授權連結已複製到剪貼簿！');
+        } catch {
+          showToast('複製失敗，請手動選取下方連結');
+        }
+      };
+    }
+
+    $('#register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('#submit-btn');
+      const err = $('#register-error');
+      err.style.display = 'none';
+
+      btn.disabled = true;
+      btn.querySelector('.btn-text').style.display = 'none';
+      btn.querySelector('.btn-loading').style.display = 'inline-flex';
+
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userNickname: $('#user-nickname').value,
+            botNickname: $('#bot-nickname').value
+          })
+        });
+        const data = await parseJsonResponse(res);
+
+        if (!data.success) throw new Error(data.error);
+
+        // Show step 2
+        $('#step-1').style.display = 'none';
+        $('#step-2').style.display = 'block';
+        $('#step-2').classList.add('fade-in');
+        
+        // Render QR + link
+        $('#qr-image').src = data.qrDataUrl;
+        bindVerificationUrl(data.verificationUrl);
+        currentUserId = data.id;
+
+        // Scroll to the new step smoothly
+        $('#step-2').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Start polling
+        startPolling();
+
+      } catch (e) {
+        err.textContent = e.message;
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.querySelector('.btn-text').style.display = 'inline';
+        btn.querySelector('.btn-loading').style.display = 'none';
+      }
+    });
+
+    async function startPolling() {
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/register/poll/${currentUserId}`);
+          const data = await parseJsonResponse(res);
+
+          if (data.status === 'completed') {
+            clearInterval(pollInterval);
+            $('#step-2').style.display = 'none';
+            $('#step-3').style.display = 'block';
+            $('#step-3').classList.add('fade-in');
+            $('#finish-bot-name').textContent = $('#bot-nickname').value;
+          } 
+          else if (data.status === 'expired' || data.status === 'denied') {
+            clearInterval(pollInterval);
+            $('#qr-overlay').style.display = 'flex';
+            $('#poll-status').innerHTML = `<span style="color:var(--error)">❌ ${data.message}</span>`;
+            $('#poll-status').style.borderColor = "rgba(239, 68, 68, 0.3)";
+            $('#poll-status').style.background = "rgba(239, 68, 68, 0.1)";
+          }
+        } catch (e) {
+          console.error('Poll error', e);
+        }
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

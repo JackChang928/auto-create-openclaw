@@ -1,0 +1,26 @@
+# docker-compose.prod.yml — Production deployment (used by GitHub Actions deploy-production job)
+# Place this file on your production server at ~/auto-create-openclaw-prod/docker-compose.prod.yml
+version: '3.8'
+
+services:
+  openclaw-standalone:
+    # Image tag is replaced by the deploy script before docker compose up
+    image: ghcr.io/REPLACE_WITH_REPO/auto-create-openclaw:REPLACE_WITH_TAG
+    container_name: openclaw-standalone
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-18789}:18789"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - USER_NICKNAME=${USER_NICKNAME:-Human}
+      - BOT_NICKNAME=${BOT_NICKNAME:-OpenClaw}
+      - FEISHU_APP_ID=${FEISHU_APP_ID}
+      - FEISHU_APP_SECRET=${FEISHU_APP_SECRET}
+      - FEISHU_DOMAIN=${FEISHU_DOMAIN:-feishu}
+      - FEISHU_OPEN_ID=${FEISHU_OPEN_ID}
+      - TZ=${TZ:-Asia/Taipei}
+    volumes:
+      - openclaw_standalone_data:/home/node/.openclaw
+
+volumes:
+  openclaw_standalone_data:

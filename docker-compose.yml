@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm-proxy
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml
+    environment:
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-1234}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY}
+      - DATABASE_URL=postgresql://litellm:litellm_pass@postgres:5432/litellm
+    command: [ "--config", "/app/config.yaml", "--detailed_debug" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - openclaw_net
+      - db_net
+      - redis_net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: litellm-postgres
+    environment:
+      - POSTGRES_USER=litellm
+      - POSTGRES_PASSWORD=litellm_pass
+      - POSTGRES_DB=litellm
+    volumes:
+      - litellm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - db_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  redis:
+    image: redis:7-alpine
+    container_name: openclaw-redis
+    networks:
+      - redis_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+
+  fluent-bit:
+    image: cr.fluentbit.io/fluent/fluent-bit:3.0.7
+    container_name: fluent-bit
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf
+    depends_on:
+      - redis
+    networks:
+      - redis_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+
+  billing-service:
+    build: 
+      context: ./billing-service
+    container_name: openclaw-billing
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://litellm:litellm_pass@postgres:5432/litellm
+    depends_on:
+      redis:
+          condition: service_started
+      postgres:
+          condition: service_healthy
+    networks:
+      - db_net
+      - redis_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  auth-service:
+    build: 
+      context: ./auth-service
+    container_name: openclaw-auth
+    ports:
+      - "3001:3001"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+    depends_on:
+      - redis
+    networks:
+      - openclaw_net
+      - redis_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+networks:
+  openclaw_net:
+    name: openclaw_shared_net
+    driver: bridge
+  db_net:
+    name: openclaw_db_net
+    driver: bridge
+  redis_net:
+    name: openclaw_redis_net
+    driver: bridge
+
+volumes:
+  litellm_pgdata:
