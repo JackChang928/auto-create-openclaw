@@ -137,6 +137,32 @@ services:
           cpus: '0.1'
           memory: 64M
 
+  langfuse:
+    image: langfuse/langfuse:latest
+    container_name: langfuse
+    ports:
+      - "3002:3000"
+    environment:
+      - DATABASE_URL=postgresql://litellm:litellm_pass@postgres:5432/litellm
+      - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-langfuse-dev-secret-change-in-prod}
+      - NEXTAUTH_URL=http://localhost:3002
+      - SALT=${LANGFUSE_SALT:-langfuse-salt-change-in-prod}
+      - TZ=Asia/Shanghai
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - openclaw_net
+      - db_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
 networks:
   openclaw_net:
     name: openclaw_shared_net

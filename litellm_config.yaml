@@ -21,3 +21,10 @@ model_list:
 litellm_settings:
   master_key: os.ENV/LITELLM_MASTER_KEY
   database_url: os.ENV/DATABASE_URL
+
+# OpenTelemetry Tracing → Langfuse
+otel:
+  enabled: true
+  endpoint: "http://langfuse:3000/api/public/otel/v1/traces"
+  service_name: "auto-create-openclaw"
+  suppression_policy: false  # false = emit all traces
