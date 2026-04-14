@@ -107,3 +107,17 @@
   - 設計了 `agentType: 'hermes'` 整合方案
   - 評估工作量：7-8 小時，風險：中低
   - 待實現：provisioner.js + server.js 修改
+
+## 📊 2026-04-15 03:07 — 系統健康檢查（Auto-Create-Ops Cycle）
+- **系統狀態**: ✅ 完全健康
+  - API 伺服器: ✅ (http://localhost:3210)
+  - LiteLLM: ✅ 健康
+  - Langfuse: ✅ v2.95.11 (http://localhost:3002)
+  - 實例: 1 運行中 / 1 總計
+- **已知問題覆查**:
+  - ✅ 用戶預算查詢功能正常（`budget` 命令完整運作，花費 $0.0000 因無實際調用）
+  - ✅ 用戶新增功能正常（`user-add` 命令完整，`/api/register` API 存在）
+  - ✅ Dashboard API 正常（`/api/admin/dashboard/instances` 返回 401 認證要求，非 404）
+- **本輪優化**:
+  - 將 `heartbeat-state.json` 加入 `.gitignore`（本地狀態文件不應提交）
+- **Commit**: 待提交
