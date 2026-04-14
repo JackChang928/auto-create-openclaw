@@ -152,6 +152,7 @@ services:
       - TZ=Asia/Shanghai
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-pk-lf-openclaw-dev}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-sk-lf-openclaw-dev}
+      - HOST=0.0.0.0
     depends_on:
       postgres:
         condition: service_healthy

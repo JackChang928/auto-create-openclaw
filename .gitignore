@@ -7,3 +7,7 @@ backups/
 .DS_Store
 coverage/
 dist/
+data/
+*.db
+*.db-shm
+*.db-wal

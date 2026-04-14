@@ -127,12 +127,27 @@ async function cmdSystem() {
     adminApi('/api/health/litellm').catch(e => ({ error: e.message, statusCode: 0 })),
     adminApi('/api/instances').catch(() => []),
   ]);
+  // Langfuse 健康檢查
+  let langfuseStatus = '⚠️ 未部署';
+  try {
+    const lfRes = await fetch('http://localhost:3002/api/public/health', { method: 'GET' });
+    if (lfRes.ok) {
+      const lfData = await lfRes.json();
+      langfuseStatus = `✅ v${lfData.version || '?'}`;
+    } else if (lfRes.status === 404) {
+      langfuseStatus = '⚠️ 端點未找到';
+    } else {
+      langfuseStatus = `❌ HTTP ${lfRes.status}`;
+    }
+  } catch { langfuseStatus = '⚠️ 無法連接'; }
+
   const running = instances.filter(i => i.isRunning).length;
   console.log(`\n🏥 OpenClaw 系統健康\n`);
   console.log(`  API 伺服器：✅ (${BASE_URL})`);
   const litellmStatus = litellm.statusCode === 401 ? '⚠️ 需認證' : litellm.healthy ? '✅ 健康' : `❌ 異常(${litellm.statusCode})`;
   console.log(`  LiteLLM：${litellmStatus}`);
   if (litellm.error) console.log(`    錯誤：${litellm.error}`);
+  console.log(`  Langfuse：${langfuseStatus}`);
   console.log(`  可用模型：${(health.models || []).join(', ') || '無法取得'}`);
   console.log(`  實例：${running} 運行中 / ${instances.length} 總計`);
   console.log(`  時間：${health.timestamp || new Date().toISOString()}`);
