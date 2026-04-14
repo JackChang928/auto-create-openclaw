@@ -123,19 +123,80 @@ async function cmdStatus(agentId) {
 // 3. system — 查看系統整體健康
 async function cmdSystem() {
   const [health, litellm, instances] = await Promise.all([
-    adminApi('/api/health'),
-    adminApi('/api/health/litellm'),
-    adminApi('/api/instances'),
+    adminApi('/api/health').catch(e => ({ error: e.message, statusCode: 0, models: [] })),
+    adminApi('/api/health/litellm').catch(e => ({ error: e.message, statusCode: 0 })),
+    adminApi('/api/instances').catch(() => []),
   ]);
   const running = instances.filter(i => i.isRunning).length;
   console.log(`\n🏥 OpenClaw 系統健康\n`);
   console.log(`  API 伺服器：✅ (${BASE_URL})`);
-  console.log(`  LiteLLM：${litellm.healthy ? '✅ 健康' : '❌ 異常'} (${litellm.statusCode})`);
+  const litellmStatus = litellm.statusCode === 401 ? '⚠️ 需認證' : litellm.healthy ? '✅ 健康' : `❌ 異常(${litellm.statusCode})`;
+  console.log(`  LiteLLM：${litellmStatus}`);
   if (litellm.error) console.log(`    錯誤：${litellm.error}`);
-  console.log(`  可用模型：${(health.models || []).join(', ')}`);
+  console.log(`  可用模型：${(health.models || []).join(', ') || '無法取得'}`);
   console.log(`  實例：${running} 運行中 / ${instances.length} 總計`);
-  console.log(`  時間：${health.timestamp}`);
+  console.log(`  時間：${health.timestamp || new Date().toISOString()}`);
   console.log();
+}
+
+// 4. budget — 用戶預算與 LiteLLM 花費查詢
+async function cmdBudget(agentId) {
+  const instances = await adminApi('/api/instances');
+  if (agentId) {
+    const instance = instances.find(i => i.agent_id === agentId);
+    if (!instance) { console.error(`❌ 找不到實例：${agentId}`); process.exit(1); }
+    const userId = instance.id;
+    try {
+      const spend = await adminApi(`/api/spend?user_id=${userId}`);
+      console.log(`\n💰 ${instance.user_nickname || agentId} 預算報告`);
+      console.log(`   預算上限：$${instance.budget ?? 0}`);
+      console.log(`   累計花費：$${(spend.totalSpend ?? 0).toFixed(4)}`);
+      if (spend.error) console.log(`   查詢狀態：⚠️ ${spend.error}`); else console.log(`   查詢狀態：✅ 正常`);
+    } catch (e) {
+      console.log(`\n💰 ${instance.user_nickname || agentId}`);
+      console.log(`   預算上限：$${instance.budget ?? 0}`);
+      console.log(`   ⚠️ 花費查詢失敗：${e.message}`);
+    }
+  } else {
+    console.log(`\n💰 所有實例預算與花費（共 ${instances.length} 個）\n`);
+    console.log('Agent ID              | 暱稱    | 預算   | 花費       | 狀態');
+    console.log('---|---------|-------|----------|------');
+    for (const inst of instances) {
+      const userId = inst.id;
+      let spendStr = '—', status = '✅';
+      try {
+        const r = await adminApi(`/api/spend?user_id=${userId}`);
+        spendStr = `$${(r.totalSpend ?? 0).toFixed(4)}`;
+        if (r.error) status = `⚠️ ${r.error.slice(0, 15)}`;
+      } catch { spendStr = '⚠️ N/A'; status = '❌'; }
+      const budgetStr = `$${inst.budget ?? 0}`;
+      console.log(`${inst.agent_id} | ${(inst.user_nickname || '?').padEnd(7)} | ${budgetStr.padEnd(5)} | ${spendStr.padEnd(9)} | ${status}`);
+    }
+  }
+}
+
+// 5. user-add — 新增用戶
+async function cmdUserAdd(userNickname, botNickname) {
+  if (!userNickname || !botNickname) {
+    console.error('❌ 需要：node opstools.js user-add <用戶暱稱> <Bot暱稱>');
+    process.exit(1);
+  }
+  try {
+    const data = await adminApi('/api/register', {
+      method: 'POST',
+      body: JSON.stringify({ userNickname, botNickname }),
+    });
+    if (data.error) { console.error(`❌ 註冊失敗：${data.error}`); process.exit(1); }
+    console.log(`\n✅ 用戶創建成功！`);
+    console.log(`   暱稱：${data.userNickname}`);
+    console.log(`   Bot：${data.botNickname}`);
+    console.log(`   Agent ID：${data.agentId}`);
+    console.log(`   驗證網址：${data.verificationUri || data.verification_url || 'N/A'}`);
+    console.log(`\n📝 請將驗證網址發送給用戶完成飛書授權。`);
+  } catch (e) {
+    console.error(`❌ 錯誤：${e.message}`);
+    process.exit(1);
+  }
 }
 
 // 4. scripts — 查看實例的腳本檔案列表
@@ -278,6 +339,12 @@ async function main() {
       case 'system':
         await cmdSystem();
         break;
+      case 'budget':
+        await cmdBudget(arg1);
+        break;
+      case 'user-add':
+        await cmdUserAdd(arg1, arg2);
+        break;
       case 'scripts':
         await cmdScripts(arg1);
         break;
@@ -333,6 +400,8 @@ function printHelp() {
   system                      系統整體健康狀態
   status <agentId>            實例健康狀態（Gateway 是否正常）
   container-stats <agentId>   實例容器 CPU/記憶體/磁碟用量
+  budget [agentId]            查看用戶 LiteLLM 花費（可指定或全部）
+  user-add <nickname> <bot>   新增用戶並獲取飛書驗證連結
   scripts <agentId>           查看可用腳本列表
   read-script <agentId> <scriptName>
                              讀取實例腳本內容
@@ -352,6 +421,9 @@ function printHelp() {
   node src/opstools.js list
   node src/opstools.js status user-jack-2223f9
   node src/opstools.js container-stats user-jack-2223f9
+  node src/opstools.js budget user-jack-2223f9
+  node src/opstools.js budget
+  node src/opstools.js user-add alice alice-bot
   node src/opstools.js read-script user-jack-2223f9 BOOTSTRAP.md
   node src/opstools.js logs user-jack-2223f9 100
 
