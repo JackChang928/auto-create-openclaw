@@ -704,6 +704,70 @@ paths:
         "404":
           $ref: '#/components/responses/NotFound'
 
+  /api/channel/discord/setup:
+    post:
+      tags:
+        - 頻道管理
+      summary: 設定 Discord 頻道
+      description: |
+        為指定實例新增 Discord 頻道。
+        流程：驗證 Bot Token → 發送測試 DM → 寫入 openclaw.json → 重啟 Gateway。
+        用戶需先在 Discord Developer Portal 建立 Application 並添加 Bot，取得 Token。
+      operationId: SetupDiscordChannel
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - agentId
+                - botToken
+                - adminDiscordId
+              properties:
+                agentId:
+                  type: string
+                  description: 目標實例的 agentId
+                  example: "user-alice-a1b2c3"
+                botToken:
+                  type: string
+                  description: Discord Bot Token
+                  example: "MTIzNDU2Nzg5OTAxMjM0NTY3ODkw.XyzABC.aBcDeFgHiJkLmNoPqRsTuVwXyZ"
+                adminDiscordId:
+                  type: string
+                  description: 管理員的 Discord User ID（用於 allowlist）
+                  example: "987654321098765432"
+      responses:
+        "200":
+          description: 設定成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  botUsername:
+                    type: string
+                    example: "MyOpenClawBot"
+                  botId:
+                    type: string
+                    example: "123456789012345678"
+                  message:
+                    type: string
+                    example: "Discord Bot @MyOpenClawBot 設定成功！"
+        "400":
+          description: 參數錯誤或 Token 無效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
   # ── 管理員端點 ───────────────────────────────────────────────────────────
 
   /api/instances:

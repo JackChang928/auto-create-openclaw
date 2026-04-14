@@ -24,7 +24,18 @@
   - `server.js` — 新增 `POST /api/channel/telegram/setup` 路由
   - `openapi.yaml` — 新增 API 文件
 
-## 🔄 Phase 2: Discord 頻道支援 ⏳ 待推進
+## 📋 Phase 2: Discord 頻道支援 ✅ 已完成（2026-04-14 14:08）
+- **內容**:
+  - `src/channels/discord-adapter.js` — Discord Bot Token 驗證 + DM 測試 + OAuth URL 生成
+  - `src/channels/index.js` — 更新匯出 Discord adapter
+  - `server.js` — 新增 `POST /api/channel/discord/setup` 路由
+  - `openapi.yaml` — 新增 API 文件
+- **功能**：
+  - `validateBotToken()` — 驗證 Discord Bot Token（GET /users/@me）
+  - `sendTestDM()` — 發送測試 DM 確認 Bot 可用
+  - `buildOAuthInviteUrl()` — 生成 Discord OAuth2 邀請連結（可選方式）
+  - `setupDiscordBot()` — 完整設定流程
+  - `buildOpenClawChannelConfig()` — 產生 openclaw.json 格式設定
 - **相依**: Phase 0/1 完成後自動推進
 - **目標**:
   - `src/channels/discord-adapter.js`

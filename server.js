@@ -62,6 +62,12 @@ import {
 } from './src/channels/telegram-adapter.js';
 
 import {
+  validateBotToken as validateDiscordBotToken,
+  sendTestDM,
+  buildOpenClawChannelConfig as buildDiscordChannelConfig,
+} from './src/channels/discord-adapter.js';
+
+import {
   authStatusForUser,
   getDashboardInstances,
   getInstanceDashboardSnapshot,
@@ -501,6 +507,87 @@ app.post('/api/channel/telegram/setup', requireAdmin, async (req, res) => {
     });
   } catch (err) {
     console.error('telegram setup error:', err);
+    res.status(500).json({ error: `伺服器錯誤：${err.message}` });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/channel/discord/setup — 新增 Discord 頻道
+// ---------------------------------------------------------------------------
+/**
+ * 用戶輸入 Discord Bot Token，系統自動完成以下流程：
+ * 1. 驗證 Token 有效性（GET /users/@me）
+ * 2. 發送測試 DM 確認可發訊
+ * 3. 寫入 openclaw.json channels.discord 設定
+ * 4. 重啟 Gateway 讓設定生效
+ *
+ * @name SetupDiscordChannel
+ * @route POST /api/channel/discord/setup
+ * @param {string} req.body.agentId - 目標實例的 agentId
+ * @param {string} req.body.botToken - Discord Bot Token
+ * @param {string} req.body.adminDiscordId - 管理員的 Discord User ID
+ * @returns {{ success: boolean, botUsername?: string, error?: string }}
+ */
+app.post('/api/channel/discord/setup', requireAdmin, async (req, res) => {
+  try {
+    const { agentId, botToken, adminDiscordId } = req.body || {};
+
+    // 基本校驗
+    if (!agentId) return res.status(400).json({ error: '缺少 agentId' });
+    if (!botToken) return res.status(400).json({ error: '缺少 botToken' });
+    if (!adminDiscordId) return res.status(400).json({ error: '缺少 adminDiscordId（管理員的 Discord User ID）' });
+
+    // Step 1: 驗證 Token
+    const validation = await validateDiscordBotToken(botToken);
+    if (!validation.ok) {
+      return res.status(400).json({ error: `Token 無效：${validation.error}` });
+    }
+
+    // Step 2: 發送測試 DM
+    const testDM = await sendTestDM(botToken, String(adminDiscordId));
+    if (!testDM.ok) {
+      return res.status(400).json({
+        error: `Token 有效但無法發 DM：${testDM.error}（請確認 Bot 已被添加至有該用戶的伺服器，且擁有發訊權限）`
+      });
+    }
+
+    // Step 3: 寫入 openclaw.json
+    const channelConfig = buildDiscordChannelConfig(
+      { botToken },
+      String(adminDiscordId)
+    );
+    const patchResult = patchChannelConfig(agentId, 'discord', channelConfig);
+    if (!patchResult.success) {
+      return res.status(500).json({ error: `寫入設定失敗：${patchResult.error}` });
+    }
+
+    // Step 4: 重啟 Gateway 讓設定生效
+    const user = getUserByAgentId(agentId);
+    if (!user) return res.status(404).json({ error: '找不到此實例' });
+
+    try {
+      stopGateway({ id: user.id, agentId });
+      startGateway({ id: user.id, agentId, port: user.port });
+    } catch (gatewayErr) {
+      console.error('Gateway restart error:', gatewayErr);
+    }
+
+    recordInstanceEvent(user, {
+      eventType: 'channel.discord_added',
+      title: '新增 Discord 頻道',
+      detail: `Bot @${validation.botUsername} 已連接，管理員 ID：${adminDiscordId}`,
+      severity: 'info',
+      actor: 'admin',
+    });
+
+    res.json({
+      success: true,
+      botUsername: validation.botUsername,
+      botId: validation.botId,
+      message: `Discord Bot @${validation.botUsername} 設定成功！`,
+    });
+  } catch (err) {
+    console.error('discord setup error:', err);
     res.status(500).json({ error: `伺服器錯誤：${err.message}` });
   }
 });
