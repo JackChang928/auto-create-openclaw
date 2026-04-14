@@ -37,6 +37,19 @@
   - `docs/hermes-agent-integration.md` 分析文件
   - `provisioner.js` 加入 `agentType: 'hermes'` 支援
 
+## 📊 2026-04-14 21:37 — 系統健康檢查（Auto-Create-Ops Cycle）
+- **系統狀態**: ✅ 完全健康
+  - API 伺服器: ✅ (http://localhost:3210)
+  - LiteLLM: ✅ 健康
+  - Langfuse: ✅ v2.95.11 (http://localhost:3002)
+  - 實例: 1 運行中 / 1 總計
+- **已知問題覆查**:
+  - ✅ 用戶預算查詢功能正常（`budget` 命令完整運作）
+  - ✅ 用戶新增功能正常（`user-add` 命令完整運作）
+  - ✅ Dashboard API 正常（`/api/admin/dashboard/instances` 返回 401 認證要求，非 404）
+- **Langfuse OTEL 追蹤**: 配置正確，OTLP 端點指向 langfuse:3000，等待真實 LLM 調用產生 traces
+- **Commit 準備**: 無本地變更，系統穩定
+
 ## 📊 2026-04-14 17:28 — Langfuse OTEL Auth 修復
 - **問題**：Langfuse 日誌出現 "No authorization header" 錯誤，OTEL traces 未被正確接收
 - **原因**：LiteLLM 往 Langfuse 發請求時未帶 Auth Header；Langfuse v2 需要 `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY`
