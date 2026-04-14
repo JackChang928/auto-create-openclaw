@@ -98,3 +98,12 @@
 - **驗證通過**: 新 API `container-stats` 和 `read-script` 已在實際環境測試成功
   - CPU: 1.12%, Memory: 8.68%, Disk: 60K（user-jack-2223f9 實際數據）
 - **Commit**: f32dc9e
+
+## 📋 Phase 3: Hermes Agent 整合 ✅ 調研完成（2026-04-15 01:08）
+- **內容**:
+  - `docs/hermes-agent-integration.md` — 整合分析文檔
+  - 分析了 Hermes Agent Docker 部署方式（`nousresearch/hermes-agent`）
+  - 對比了 OpenClaw vs Hermes 架構差異（數據目錄結構、啟動命令、資源需求）
+  - 設計了 `agentType: 'hermes'` 整合方案
+  - 評估工作量：7-8 小時，風險：中低
+  - 待實現：provisioner.js + server.js 修改
