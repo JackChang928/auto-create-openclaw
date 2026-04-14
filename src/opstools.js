@@ -478,6 +478,65 @@ async function cmdEvents(agentId, lines = 20) {
   console.log();
 }
 
+// 10. orphans — 列出未在平台註冊的 orphan Docker 容器
+async function cmdOrphans() {
+  // 取得平台所有實例的 container_name
+  const instances = await adminApi('/api/instances');
+  const managedContainers = new Set(instances.map(u => u.container_name).filter(Boolean));
+
+  // 取得所有 auto-openclaw-* 容器
+  const { execSync } = require('child_process');
+  let dockerContainers = [];
+  try {
+    const out = execSync('docker ps -a --format "{{.Names}}"', { encoding: 'utf-8' });
+    dockerContainers = out.trim().split('\n').filter(Boolean);
+  } catch {
+    console.log('⚠️ 無法取得 Docker 容器列表');
+    return;
+  }
+
+  const orphans = dockerContainers.filter(name => {
+    // 只看 auto-openclaw-user-*  pattern
+    if (!name.startsWith('auto-openclaw-user-')) return false;
+    // 排除平台有記錄的
+    if (managedContainers.has(name)) return false;
+    return true;
+  });
+
+  if (orphans.length === 0) {
+    console.log('✅ 沒有發現 orphan 容器');
+    return;
+  }
+
+  console.log(`⚠️  發現 ${orphans.length} 個 orphan 容器（存在於 Docker 但未在平台註冊）：\n`);
+  for (const name of orphans) {
+    const info = execSync(`docker inspect ${name} --format "{{.State.Status}} | {{.State.Health}}" 2>/dev/null`, { encoding: 'utf-8' }).trim();
+    console.log(`  🗑️  ${name}  (${info || '狀態未知'})`);
+  }
+  console.log('\n可用指令清理：');
+  console.log('  docker rm -f <container_name>   # 強制刪除容器');
+  console.log('  node src/opstools.js delete <agentId>  # 刪除平台已註冊的實例');
+}
+
+// 11. delete — 刪除實例（停止容器、移除容器、清除資料、目錄、釋放連接埠）
+async function cmdDelete(agentId) {
+  if (!agentId) throw new Error('缺少 agentId（格式如 user-jack-2223f9）');
+  const instances = await adminApi('/api/instances');
+  const instance = instances.find(u => u.agent_id === agentId);
+  if (!instance) throw new Error(`找不到實例：${agentId}（可用 node opstools.js list 確認）`);
+
+  console.log(`⚠️  即将删除實例：${agentId}`);
+  console.log(`   容器：${instance.container_name}`);
+  console.log(`   端口：${instance.port}`);
+  console.log('');
+
+  const result = await adminApi(`/api/instance/${instance.id}/delete`, { method: 'POST' });
+  console.log(`✅ 實例 ${agentId} 已刪除`);
+  if (result.success) {
+    console.log(`   容器已移除：${result.containerName}`);
+  }
+}
+
 // ─── CLI Entry Point ────────────────────────────────────────────────────────
 
 const [cmd, arg1, arg2, arg3] = process.argv.slice(2);
@@ -527,6 +586,12 @@ async function main() {
       case 'events':
         await cmdEvents(arg1, parseInt(arg2) || 20);
         break;
+      case 'orphans':
+        await cmdOrphans();
+        break;
+      case 'delete':
+        await cmdDelete(arg1);
+        break;
       case 'help':
         printHelp();
         break;
@@ -569,6 +634,8 @@ function printHelp() {
   restart <agentId>            重啟實例 Gateway
   logs <agentId> [lines]       查看實例日誌（默認50行）
   activate <agentId>          激活實例（建立並啟動容器）
+  delete <agentId>            刪除實例（停止+移除容器+清除資料）
+  orphans                     列出orphan容器（Docker有但平台無記錄）
   events <agentId> [lines]     查看實例事件（默認20筆）
   help                        顯示本說明
 
