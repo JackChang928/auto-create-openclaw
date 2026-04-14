@@ -13,6 +13,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - MINIMAX_API_KEY=${MINIMAX_API_KEY}
       - DATABASE_URL=postgresql://litellm:litellm_pass@postgres:5432/litellm
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://langfuse:3000/api/public/otel
+      - OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic ${LANGFUSE_OTEL_AUTH:-cGstbGYtb3BlbmNsYXctZGV2OnNrLWxmLW9wZW5jbGF3LWRldg==}
     command: [ "--config", "/app/config.yaml", "--detailed_debug" ]
     depends_on:
       postgres:
@@ -148,6 +150,8 @@ services:
       - NEXTAUTH_URL=http://localhost:3002
       - SALT=${LANGFUSE_SALT:-langfuse-salt-change-in-prod}
       - TZ=Asia/Shanghai
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-pk-lf-openclaw-dev}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-sk-lf-openclaw-dev}
     depends_on:
       postgres:
         condition: service_healthy

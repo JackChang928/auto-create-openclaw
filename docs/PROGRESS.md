@@ -37,6 +37,16 @@
   - `docs/hermes-agent-integration.md` 分析文件
   - `provisioner.js` 加入 `agentType: 'hermes'` 支援
 
+## 📊 2026-04-14 17:28 — Langfuse OTEL Auth 修復
+- **問題**：Langfuse 日誌出現 "No authorization header" 錯誤，OTEL traces 未被正確接收
+- **原因**：LiteLLM 往 Langfuse 發請求時未帶 Auth Header；Langfuse v2 需要 `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY`
+- **修復**：
+  - `docker-compose.yml` langfuse service 新增 `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY`（預設 `pk-lf-openclaw-dev` / `sk-lf-openclaw-dev`）
+  - `docker-compose.yml` litellm service 新增 `OTEL_EXPORTER_OTLP_ENDPOINT` + `OTEL_EXPORTER_OTLP_HEADERS`（Basic Auth）
+  - `litellm_config.yaml` otel 段落加註解說明 auth 由 env var 提供
+- **驗證**：Langfuse 重啟後舊的 "No authorization header" 錯誤消失
+- **待驗證**：需要真實 LLM API Key 才能產生 traces 並確認端到端流動
+
 ## 📊 2026-04-14 16:42 — Langfuse Observability 部署啟動
 - **Commit**: 8665ce2
 - **內容**:

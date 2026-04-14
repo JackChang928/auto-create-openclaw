@@ -23,8 +23,9 @@ litellm_settings:
   database_url: os.ENV/DATABASE_URL
 
 # OpenTelemetry Tracing → Langfuse
+# Auth headers are set via OTEL_EXPORTER_OTLP_HEADERS env var in docker-compose.yml
 otel:
   enabled: true
-  endpoint: "http://langfuse:3000/api/public/otel/v1/traces"
+  endpoint: "http://langfuse:3000/api/public/otel"
   service_name: "auto-create-openclaw"
   suppression_policy: false  # false = emit all traces
