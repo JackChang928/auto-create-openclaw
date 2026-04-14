@@ -36,7 +36,7 @@ fi
 # ── 1. Git sync ─────────────────────────────────────────────────────────
 if git remote get-url origin &>/dev/null; then
   log "🔄 git pull (HTTPS → SSH fallback)..."
-  if git pull --ff-only origin master 2>>"$LOG_FILE"; then
+  if git pull --ff-only origin new-master 2>>"$LOG_FILE"; then
     log "✅ git pull 成功"
   else
     # Try SSH URL as fallback
@@ -47,7 +47,7 @@ if git remote get-url origin &>/dev/null; then
       git remote set-url origin "$SSH_URL"
     fi
     log "   嘗試 SSH push..."
-    if timeout 30 git push origin master 2>>"$LOG_FILE"; then
+    if timeout 30 git push origin new-master 2>>"$LOG_FILE"; then
       log "✅ SSH push 成功"
     else
       log "⚠️  Git push 失敗（網路問題），本地 commit 保留"
