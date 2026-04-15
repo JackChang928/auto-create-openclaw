@@ -9,7 +9,7 @@
  * - Mock provisioner.js to avoid real Docker operations
  * - Verify actual DB state changes via direct SQLite queries
  */
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, vi, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import { existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
@@ -53,11 +53,18 @@ vi.mock('../provisioner.js', () => ({
   startGateway: vi.fn().mockResolvedValue({ success: true }),
   stopGateway: vi.fn().mockResolvedValue({ success: true }),
   deleteInstance: vi.fn().mockResolvedValue({ success: true }),
+  ensureInstanceDirs: vi.fn().mockReturnValue({
+    workspaceDir: '/tmp/mock-workspace',
+    openclawHome: '/tmp/mock-openclaw',
+  }),
+  removeInstanceDir: vi.fn().mockReturnValue({ success: true }),
   isGatewayRunning: vi.fn().mockResolvedValue(false),
   checkContainerLiveness: vi.fn().mockResolvedValue({ alive: true }),
   checkLiteLLMProxyHealth: vi.fn().mockResolvedValue({ alive: true }),
   getLiteLLMModelInfo: vi.fn().mockResolvedValue({ model: 'gpt-4o-mini' }),
   getLiteLLMSpend: vi.fn().mockResolvedValue({ total_spend: 0.0 }),
+  patchChannelConfig: vi.fn().mockReturnValue({ success: true }),
+  execInContainer: vi.fn().mockReturnValue({ success: true, output: '' }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -71,12 +78,12 @@ const { dbHandle } = dbModule;
 // Clean up test database after all tests
 // ---------------------------------------------------------------------------
 afterAll(() => {
-  try { dbHandle?.close?.(); } catch (_) {}
+  try { dbHandle?.close?.(); } catch {}
   try {
     if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
     if (existsSync(TEST_DB_WAL)) unlinkSync(TEST_DB_WAL);
     if (existsSync(TEST_DB_SHM)) unlinkSync(TEST_DB_SHM);
-  } catch (_) {}
+  } catch {}
 });
 
 // ---------------------------------------------------------------------------
@@ -86,7 +93,7 @@ function cleanTestDb() {
   try {
     dbHandle?.prepare('DELETE FROM users').run();
     dbHandle?.prepare('UPDATE port_pool SET in_use = 0, user_id = NULL').run();
-  } catch (_) {}
+  } catch {}
 }
 
 beforeEach(() => {
@@ -163,22 +170,11 @@ describe('POST /api/register — Integration Tests', () => {
     expect(user.agent_id).toBe(res.body.agentId);
     expect(user.status).toBe('pending_scan');
     expect(user.device_code).toBe(mockRegData.deviceCode);
-    expect(user.port).toBeGreaterThan(0);
+    expect(user.port).toBeNull();
   });
 
-  it('allocates a port from the pool and marks it as in_use', async () => {
-    const res = await request(app)
-      .post('/api/register')
-      .send({ userNickname: 'PortTest', botNickname: 'PortBot' })
-      .expect(200);
-
-    const userId = res.body.id;
-    const port = dbHandle.prepare('SELECT port FROM users WHERE id = ?').get(userId).port;
-
-    const poolEntry = dbHandle.prepare('SELECT * FROM port_pool WHERE port = ?').get(port);
-    expect(poolEntry.in_use).toBe(1);
-    expect(poolEntry.user_id).toBe(userId);
-  });
+  // Port allocation happens at /api/instance/:id/activate, not at register.
+  // Register creates the user with port: null (deferred allocation for non-blocking QR code response).
 
   it('generates unique agentIds for concurrent registrations', async () => {
     const [res1, res2, res3] = await Promise.all([
@@ -229,20 +225,8 @@ describe('POST /api/register — Integration Tests', () => {
     expect(res.body.success).toBe(true);
   });
 
-  it('consumes a port from the pool on each registration', async () => {
-    const initialAvailable = dbHandle
-      .prepare('SELECT COUNT(*) as cnt FROM port_pool WHERE in_use = 0')
-      .get().cnt;
-
-    await request(app).post('/api/register').send({ userNickname: 'P1', botNickname: 'B1' }).expect(200);
-    await request(app).post('/api/register').send({ userNickname: 'P2', botNickname: 'B2' }).expect(200);
-
-    const finalAvailable = dbHandle
-      .prepare('SELECT COUNT(*) as cnt FROM port_pool WHERE in_use = 0')
-      .get().cnt;
-
-    expect(finalAvailable).toBe(initialAvailable - 2);
-  });
+  // Port pool consumption happens at /api/instance/:id/activate, not at register.
+  // Register is intentionally non-blocking (returns QR code quickly).
 
   it('calls feishu initRegistration and beginRegistration', async () => {
     const { initRegistration, beginRegistration } = await import('../feishu-registration.js');
