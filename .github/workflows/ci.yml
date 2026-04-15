@@ -2,11 +2,11 @@ name: CI
 
 "on":
   push:
-    branches: [main]
+    branches: [new-master]
     tags:
       - 'v*'
   pull_request:
-    branches: [main]
+    branches: [new-master]
 
 jobs:
   lint-and-typecheck:
