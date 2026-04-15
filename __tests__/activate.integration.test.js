@@ -100,11 +100,18 @@ vi.mock('../provisioner.js', () => ({
   startGateway: vi.fn().mockResolvedValue({ success: true }),
   stopGateway: vi.fn().mockResolvedValue({ success: true }),
   deleteInstance: vi.fn().mockResolvedValue({ success: true }),
+  ensureInstanceDirs: vi.fn().mockReturnValue({
+    workspaceDir: '/tmp/mock-workspace',
+    openclawHome: '/tmp/mock-openclaw',
+  }),
+  removeInstanceDir: vi.fn().mockReturnValue({ success: true }),
   isGatewayRunning: vi.fn().mockReturnValue(false),
   checkContainerLiveness: vi.fn().mockResolvedValue({ alive: true }),
   checkLiteLLMProxyHealth: vi.fn().mockResolvedValue({ alive: true }),
   getLiteLLMModelInfo: vi.fn().mockResolvedValue({ model: 'gpt-4o-mini' }),
   getLiteLLMSpend: vi.fn().mockResolvedValue({ total_spend: 0.0 }),
+  patchChannelConfig: vi.fn().mockReturnValue({ success: true }),
+  execInContainer: vi.fn().mockReturnValue({ success: true, output: '' }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -118,12 +125,12 @@ const { dbHandle } = dbModule;
 // Cleanup
 // ---------------------------------------------------------------------------
 afterAll(() => {
-  try { dbHandle?.close?.(); } catch (_) {}
+  try { dbHandle?.close?.(); } catch {}
   try {
     if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
     if (existsSync(TEST_DB_WAL)) unlinkSync(TEST_DB_WAL);
     if (existsSync(TEST_DB_SHM)) unlinkSync(TEST_DB_SHM);
-  } catch (_) {}
+  } catch {}
 });
 
 // ---------------------------------------------------------------------------
@@ -133,7 +140,7 @@ function cleanTestDb() {
   try {
     dbHandle?.prepare('DELETE FROM users').run();
     dbHandle?.prepare('UPDATE port_pool SET in_use = 0, user_id = NULL').run();
-  } catch (_) {}
+  } catch {}
 }
 
 // ---------------------------------------------------------------------------
@@ -154,19 +161,20 @@ function insertTestUser(overrides = {}) {
     container_id: null,
     gateway_token: null,
     workspace_dir: '/tmp/test-workspace',
+    agent_dir: '/tmp/test-openclaw',
     budget: 20,
     ...overrides,
   };
   const result = dbHandle?.prepare(`
     INSERT INTO users (user_nickname, bot_nickname, agent_id, port, status,
       feishu_app_id, feishu_app_secret, feishu_open_id, openai_api_key,
-      container_name, container_id, gateway_token, workspace_dir, budget)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      container_name, container_id, gateway_token, workspace_dir, agent_dir, budget)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     user.user_nickname, user.bot_nickname, user.agent_id, user.port, user.status,
     user.feishu_app_id, user.feishu_app_secret, user.feishu_open_id, user.openai_api_key,
     user.container_name, user.container_id, user.gateway_token, user.workspace_dir,
-    user.budget
+    user.agent_dir, user.budget
   );
   user.id = result?.lastInsertRowid;
   return user;
@@ -314,7 +322,6 @@ describe('POST /api/instance/:id/activate — Integration Tests', () => {
       expect(res.body.success).toBe(true);
 
       // Check that LiteLLM was called with correct max_budget
-      const liteLLMCall = fetchCalls.find(c => c.url.includes('/key/generate'));
       // We can't directly inspect the body from fetchCalls (only URL/method tracked)
       // But budget:50.5 was used, and the key was generated successfully
       expect(getOpenAIKeyFromDb(user.id)).toMatch(/^sk-litellm-/);
