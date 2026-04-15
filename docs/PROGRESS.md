@@ -177,6 +177,16 @@
   - 在研究報告中新增「2026-04-15 Temporal 初步評估」章節
 - **Commit 準備**: `docs/開源工具研究報告.md` 已更新
 
+## 📋 Phase 4: 用戶註冊工作流引擎（Temporal）⏳ 規劃完成（2026-04-15 10:08）
+- **Commit**: 4d0c2f3
+- **內容**:
+  - `docs/Phase4-用戶註冊工作流規劃.md` — Phase 4 完整規劃
+  - 分析現有 `/api/register` 的同步單點問題（流程中斷風險、無重試機制、無進度追蹤）
+  - 制定 Temporal 整合方案（`temporalio/auto-setup:1.25.0` + 獨立 PostgreSQL schema）
+  - 工作量估算：~10.5h，含 7 個任務（T1-T7）
+  - 涵蓋 Workflow Definition、前端進度追蹤、數據隱私考量
+- **相依**: Owner 確認方案後啟動 T1（Temporal Server 部署）
+
 ## 📊 2026-04-15 08:37 — 系統健康檢查（Auto-Create-Ops Cycle #8）
 - **系統狀態**: ✅ 完全健康
   - API 伺服器: ✅ (http://localhost:3210)
