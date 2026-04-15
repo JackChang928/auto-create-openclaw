@@ -400,7 +400,7 @@ async function submitAdminLogin(password) {
   }
 
   try {
-    const loginUrl = `${window.location.protocol}//${window.location.hostname}:3001/api/auth/login`;
+    const loginUrl = `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api/auth/login`;
     const res = await fetch(loginUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

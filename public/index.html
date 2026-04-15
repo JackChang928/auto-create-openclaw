@@ -490,8 +490,8 @@
       btn.disabled = true;
 
       try {
-        // Auth service is on port 3001
-        const loginUrl = window.location.protocol + '//' + window.location.hostname + ':3001/api/auth/user-login';
+        // Auth service is on same port
+        const loginUrl = window.location.protocol + '//' + window.location.hostname + ':' + window.location.port + '/api/auth/user-login';
         const res = await fetch(loginUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
