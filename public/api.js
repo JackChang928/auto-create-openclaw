@@ -62,7 +62,7 @@ class OpenClawAPI {
       return data;
     }
 
-    const text = await res.text();
+    await res.text();
     throw new Error(`伺服器回傳非 JSON（HTTP ${res.status}）`);
   }
 
@@ -77,6 +77,17 @@ class OpenClawAPI {
     return this._fetch('/register', {
       method: 'POST',
       body: JSON.stringify({ userNickname, botNickname }),
+    });
+  }
+
+  /**
+   * Register a new Hermes Agent instance
+   * @param {{ userNickname, botNickname, openaiApiKey, channels, telegramBotToken, discordBotToken }} opts
+   */
+  async registerHermes({ userNickname, botNickname, openaiApiKey, channels, telegramBotToken, discordBotToken }) {
+    return this._fetch('/register/hermes', {
+      method: 'POST',
+      body: JSON.stringify({ userNickname, botNickname, openaiApiKey, channels, telegramBotToken, discordBotToken }),
     });
   }
 

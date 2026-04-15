@@ -10,6 +10,16 @@
   <style>
     /* ─── Page-specific styles for index.html ─────────────────────── */
 
+    /* Agent Type Selector */
+    .agent-type-card input:checked + .agent-type-inner {
+      border-color: #6366f1 !important;
+      background: rgba(99, 102, 241, 0.1);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+    .agent-type-card:hover .agent-type-inner {
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+
     /* Hero */
     .hero { position: relative; z-index: 1; text-align: center; padding: 100px 20px 60px; max-width: 800px; margin: 0 auto; }
     .hero-title { font-size: 3.5rem; font-weight: 700; line-height: 1.2; margin-bottom: 24px; letter-spacing: -0.03em; }
@@ -142,6 +152,27 @@
         </h2>
         <form id="register-form" autocomplete="off">
           <div class="form-group">
+            <label>選擇 Agent 類型</label>
+            <div class="agent-type-selector" style="display: flex; gap: 12px; margin-top: 8px;">
+              <label class="agent-type-card" style="flex:1; cursor: pointer;">
+                <input type="radio" name="agent_type" value="openclaw" checked style="display:none;">
+                <div class="agent-type-inner" style="border: 2px solid var(--border-card); border-radius: 12px; padding: 16px; text-align: center; transition: all 0.2s;">
+                  <div style="font-size: 1.8rem; margin-bottom: 8px;">🦞</div>
+                  <div style="font-weight: 600; color: #fff; margin-bottom: 4px;">OpenClaw</div>
+                  <div style="font-size: 0.8rem; color: var(--text-secondary);">飛書生態 · 多平台插件</div>
+                </div>
+              </label>
+              <label class="agent-type-card" style="flex:1; cursor: pointer;">
+                <input type="radio" name="agent_type" value="hermes" style="display:none;">
+                <div class="agent-type-inner" style="border: 2px solid var(--border-card); border-radius: 12px; padding: 16px; text-align: center; transition: all 0.2s;">
+                  <div style="font-size: 1.8rem; margin-bottom: 8px;">🤖</div>
+                  <div style="font-weight: 600; color: #fff; margin-bottom: 4px;">Hermes</div>
+                  <div style="font-size: 0.8rem; color: var(--text-secondary);">原生多頻道 · 閉環學習</div>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
             <label for="user-nickname">你的暱稱</label>
             <input type="text" id="user-nickname" placeholder="小明" required maxlength="30">
             <span class="input-hint">Bot 會用這個名字來稱呼你</span>
@@ -149,10 +180,44 @@
           <div class="form-group">
             <label for="bot-nickname">Bot 暱稱</label>
             <input type="text" id="bot-nickname" placeholder="專屬編程助手" required maxlength="30">
-            <span class="input-hint">你的 AI 助手在飛書中的名字</span>
+            <span class="input-hint" id="bot-nickname-hint">你的 AI 助手在飛書中的名字</span>
           </div>
+
+          <!-- Hermes: API Key 輸入（隱藏，選擇 Hermes 時顯示）-->
+          <div id="hermes-api-key-section" style="display: none;">
+            <div class="form-group" style="margin-top: 16px;">
+              <label for="hermes-api-key">OpenAI API Key</label>
+              <input type="password" id="hermes-api-key" placeholder="sk-xxxx" maxlength="100">
+              <span class="input-hint">用於 Gemini / Anthropic / OpenAI 模型</span>
+            </div>
+            <div class="form-group">
+              <label>啟用頻道（可多選）</label>
+              <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                <label style="display:flex; align-items:center; gap:6px; padding:8px 12px; border:1px solid var(--border-card); border-radius:8px; cursor:pointer;">
+                  <input type="checkbox" name="hermes_channel" value="feishu" checked> 飛書
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; padding:8px 12px; border:1px solid var(--border-card); border-radius:8px; cursor:pointer;">
+                  <input type="checkbox" name="hermes_channel" value="telegram"> Telegram
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; padding:8px 12px; border:1px solid var(--border-card); border-radius:8px; cursor:pointer;">
+                  <input type="checkbox" name="hermes_channel" value="discord"> Discord
+                </label>
+              </div>
+            </div>
+            <div class="form-group" id="telegram-token-group" style="display:none;">
+              <label for="telegram-bot-token">Telegram Bot Token</label>
+              <input type="text" id="telegram-bot-token" placeholder="123456:ABC-DEF...">
+              <span class="input-hint">在 @BotFather 取得</span>
+            </div>
+            <div class="form-group" id="discord-token-group" style="display:none;">
+              <label for="discord-bot-token">Discord Bot Token</label>
+              <input type="password" id="discord-bot-token" placeholder="xxxxx.xxxxx.xxxxx">
+              <span class="input-hint">在 Discord Developer Portal 取得</span>
+            </div>
+          </div>
+
           <button type="submit" id="submit-btn" class="btn-primary" style="width: 100%; margin-top: 10px;">
-            <span class="btn-text">下ㄧ步：獲取飛書授權碼 ➔</span>
+            <span class="btn-text" id="submit-btn-text">下ㄧ步：獲取飛書授權碼 ➔</span>
             <span class="btn-loading" style="display:none; align-items:center; justify-content:center; gap:8px;">
               <span class="spinner"></span> 處理中...
             </span>
@@ -237,6 +302,21 @@
       </div>
 
       <!-- Step 3: Success Pending Activation -->
+      <div id="step-2-hermes" class="card" style="display:none; margin-top: 20px;">
+        <div class="card-header">
+          <span class="step-num">2</span>
+          Hermes 容器啟動中
+        </div>
+        <div style="text-align:center; padding: 20px 0;">
+          <div style="font-size: 3rem; margin-bottom: 16px;">🤖</div>
+          <h3 style="margin-bottom: 12px;">Hermes Agent 正在啟動...</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 20px;">容器名稱：<code id="hermes-container-name">hermes-agent</code></p>
+          <p style="color: var(--text-secondary);">Gateway 網址：<code id="hermes-gateway-url">http://localhost:18790</code></p>
+          <div class="spinner-large" style="margin: 24px auto;"></div>
+          <p style="color: var(--text-secondary); font-size: 0.85rem;">請稍候，系統正在配置頻道並啟動容器...</p>
+        </div>
+      </div>
+
       <div id="step-3" class="card" style="display:none;">
         <div class="success-header">
           <span class="success-icon">🎉</span>
@@ -477,6 +557,32 @@
       if (OpenClawApp.isLoggedIn()) {
         await loadDashboard();
       }
+
+      // ─── Agent Type Card Selection ─────────────────────────────
+      document.querySelectorAll('.agent-type-card input[name="agent_type"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          const isHermes = radio.value === 'hermes';
+          document.getElementById('hermes-api-key-section').style.display = isHermes ? 'block' : 'none';
+          document.getElementById('submit-btn-text').textContent = isHermes
+            ? '下一步：啟動 Hermes 容器 ➔'
+            : '下一步：獲取飛書授權碼 ➔';
+          document.getElementById('bot-nickname-hint').textContent = isHermes
+            ? '你的 AI 助手在主要頻道中的名字'
+            : '你的 AI 助手在飛書中的名字';
+          // Refresh validation
+          document.getElementById('register-form').querySelector('button[type="submit"]').disabled = false;
+        });
+      });
+
+      // ─── Hermes Channel Checkboxes ──────────────────────────────
+      document.querySelectorAll('input[name="hermes_channel"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const telegramChecked = document.querySelector('input[name="hermes_channel"][value="telegram"]')?.checked;
+          const discordChecked = document.querySelector('input[name="hermes_channel"][value="discord"]')?.checked;
+          document.getElementById('telegram-token-group').style.display = telegramChecked ? 'block' : 'none';
+          document.getElementById('discord-token-group').style.display = discordChecked ? 'block' : 'none';
+        });
+      });
     });
 
     // ─── Login Form ──────────────────────────────────────────────
@@ -571,28 +677,54 @@
       btn.querySelector('.btn-text').style.display = 'none';
       btn.querySelector('.btn-loading').style.display = 'inline-flex';
 
+      const agentType = document.querySelector('input[name="agent_type"]:checked')?.value || 'openclaw';
+
       try {
         const api = new OpenClawAPI();
-        const data = await api.register({
-          userNickname: $('#user-nickname').value,
-          botNickname: $('#bot-nickname').value
-        });
-        if (!data.success) throw new Error(data.error);
 
-        // Step 2: Show QR + link
-        $('#step-1').style.display = 'none';
-        $('#step-2').style.display = 'block';
-        $('#step-2').classList.add('fade-in');
-        $('#qr-image').src = data.qrDataUrl;
-        bindVerificationUrl(data.verificationUrl);
-        currentUserId = data.id;
-        window.__openclawUserById = window.__openclawUserById || {};
-        window.__openclawUserById[currentUserId] = { agent_id: data.agentId };
-        saveOnboardingCache(1, { id: data.id, agentId: data.agentId, qrDataUrl: data.qrDataUrl, verificationUrl: data.verificationUrl, userNickname: $('#user-nickname').value, botNickname: $('#bot-nickname').value });
-        $('#step-2').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (agentType === 'hermes') {
+          // ── Hermes Registration ────────────────────────────────
+          const hermesData = {
+            userNickname: $('#user-nickname').value,
+            botNickname: $('#bot-nickname').value,
+            openaiApiKey: $('#hermes-api-key')?.value || '',
+            channels: [...document.querySelectorAll('input[name="hermes_channel"]:checked')].map(c => c.value),
+            telegramBotToken: $('#telegram-bot-token')?.value || '',
+            discordBotToken: $('#discord-bot-token')?.value || ''
+          };
 
-        // Start polling via RegistrationPoll helper
-        startPolling();
+          const data = await api.registerHermes(hermesData);
+          if (!data.success) throw new Error(data.error);
+
+          // Step 2 (Hermes): Show container info + channel guide
+          $('#step-1').style.display = 'none';
+          $('#step-2-hermes').style.display = 'block';
+          $('#step-2-hermes').classList.add('fade-in');
+          $('#hermes-container-name').textContent = data.containerName || 'hermes-agent';
+          $('#hermes-gateway-url').textContent = data.gatewayUrl || `http://localhost:${data.port || 18790}`;
+          $('#step-2-hermes').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          saveOnboardingCache(1, { id: data.id, agentId: data.agentId, agentType: 'hermes', channels: hermesData.channels });
+        } else {
+          // ── OpenClaw Registration (Feishu) ───────────────────────
+          const data = await api.register({
+            userNickname: $('#user-nickname').value,
+            botNickname: $('#bot-nickname').value
+          });
+          if (!data.success) throw new Error(data.error);
+
+          // Step 2: Show QR + link
+          $('#step-1').style.display = 'none';
+          $('#step-2').style.display = 'block';
+          $('#step-2').classList.add('fade-in');
+          $('#qr-image').src = data.qrDataUrl;
+          bindVerificationUrl(data.verificationUrl);
+          currentUserId = data.id;
+          window.__openclawUserById = window.__openclawUserById || {};
+          window.__openclawUserById[currentUserId] = { agent_id: data.agentId };
+          saveOnboardingCache(1, { id: data.id, agentId: data.agentId, qrDataUrl: data.qrDataUrl, verificationUrl: data.verificationUrl, userNickname: $('#user-nickname').value, botNickname: $('#bot-nickname').value, agentType: 'openclaw' });
+          $('#step-2').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          startPolling();
+        }
 
       } catch (e) {
         err.textContent = e.message;
