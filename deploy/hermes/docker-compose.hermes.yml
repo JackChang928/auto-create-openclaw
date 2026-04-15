@@ -1,0 +1,68 @@
+# docker-compose.hermes.yml — Hermes Agent 部署配置
+# 使用方式：
+#   docker compose -f docker-compose.hermes.yml up -d
+#   或與現有 stack 合併：
+#   docker compose -f docker-compose.yml -f docker-compose.hermes.yml up -d
+
+services:
+  hermes-agent:
+    image: ghcr.io/jackchang928/auto-create-openclaw-hermes:latest
+    container_name: hermes-agent
+    restart: unless-stopped
+    ports:
+      - "${HERMES_PORT:-18790}:18790"
+      - "${HERMES_WS_PORT:-18791}:18791"
+    environment:
+      # API Keys（由 provisioner 或環境注入）
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY:-}
+      # Telegram Bot（可選）
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      # Discord Bot（可選）
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
+      # 飛書（可選）
+      - FEISHU_APP_ID=${FEISHU_APP_ID:-}
+      - FEISHU_APP_SECRET=${FEISHU_APP_SECRET:-}
+      # 系統配置
+      - TZ=${TZ:-Asia/Taipei}
+      - HERMES_LOG_LEVEL=${HERMES_LOG_LEVEL:-INFO}
+      - HERMES_GATEWAY_PORT=${HERMES_GATEWAY_PORT:-18790}
+      - HERMES_WS_PORT=${HERMES_WS_PORT:-18791}
+      # 資源配置
+      - HERMES_MEMORY_LIMIT=${HERMES_MEMORY_LIMIT:-4g}
+      - HERMES_CPU_LIMIT=${HERMES_CPU_LIMIT:-2}
+      # Browser Tools（可選，預設關閉以節省記憶體）
+      - HERMES_ENABLE_BROWSER=${HERMES_ENABLE_BROWSER:-false}
+    volumes:
+      # 數據持久化目錄
+      - hermes_data:/opt/data
+      # 可選：自訂 SOUL.md
+      # - ${HERMES_SOUL_PATH:-./hermes_soul.md}:/opt/data/SOUL.md:ro
+    shm_size: ${HERMES_SHM_SIZE:-256m}
+    deploy:
+      resources:
+        limits:
+          cpus: ${HERMES_CPU_LIMIT:-2}
+          memory: ${HERMES_MEMORY_LIMIT:-4G}
+        reservations:
+          cpus: 0.5
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18790/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - hermes_net
+
+volumes:
+  hermes_data:
+    driver: local
+
+networks:
+  hermes_net:
+    name: hermes_shared_net
+    driver: bridge

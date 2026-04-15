@@ -1,7 +1,9 @@
 # docker-compose.prod.yml — Production deployment (used by GitHub Actions deploy-production job)
 # Place this file on your production server at ~/auto-create-openclaw-prod/docker-compose.prod.yml
-version: '3.8'
-
+#
+# ══════════════════════════════════════════════════════════════════════════════
+# 🚀 OPENCLAW SERVICE
+# ══════════════════════════════════════════════════════════════════════════════
 services:
   openclaw-standalone:
     # Image tag is replaced by the deploy script before docker compose up
@@ -21,6 +23,52 @@ services:
       - TZ=${TZ:-Asia/Taipei}
     volumes:
       - openclaw_standalone_data:/home/node/.openclaw
+    networks:
+      - openclaw_prod_net
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # 🤖 HERMES AGENT (OPTIONAL — uncomment to enable)
+  # ══════════════════════════════════════════════════════════════════════════
+  # hermes-agent:
+  #   image: ghcr.io/REPLACE_WITH_REPO/auto-create-openclaw-hermes:REPLACE_WITH_TAG
+  #   container_name: hermes-agent
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${HERMES_PORT:-18790}:18790"
+  #     - "${HERMES_WS_PORT:-18791}:18791"
+  #   environment:
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+  #     - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+  #     - MINIMAX_API_KEY=${MINIMAX_API_KEY:-}
+  #     - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+  #     - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
+  #     - FEISHU_APP_ID=${FEISHU_APP_ID:-}
+  #     - FEISHU_APP_SECRET=${FEISHU_APP_SECRET:-}
+  #     - TZ=${TZ:-Asia/Taipei}
+  #     - HERMES_LOG_LEVEL=${HERMES_LOG_LEVEL:-INFO}
+  #     - HERMES_GATEWAY_PORT=${HERMES_GATEWAY_PORT:-18790}
+  #     - HERMES_WS_PORT=${HERMES_WS_PORT:-18791}
+  #     - HERMES_ENABLE_BROWSER=${HERMES_ENABLE_BROWSER:-false}
+  #   volumes:
+  #     - hermes_data:/opt/data
+  #   shm_size: ${HERMES_SHM_SIZE:-256m}
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: ${HERMES_CPU_LIMIT:-2}
+  #         memory: ${HERMES_MEMORY_LIMIT:-4G}
+  #   networks:
+  #     - hermes_prod_net
 
 volumes:
   openclaw_standalone_data:
+  # hermes_data:          # Uncomment if Hermes is enabled
+
+networks:
+  openclaw_prod_net:
+    name: openclaw_prod_net
+    driver: bridge
+  # hermes_prod_net:      # Uncomment if Hermes is enabled
+  #   name: hermes_prod_net
+  #   driver: bridge
