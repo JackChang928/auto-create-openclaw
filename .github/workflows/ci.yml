@@ -203,7 +203,7 @@ jobs:
             --jq '.id')
           echo "deployment_id=${RESP}" >> $GITHUB_OUTPUT
 
-      - name: Set deployment status: in_progress
+      - name: "Set deployment status: in_progress"
         run: |
           gh api repos/$GITHUB_REPOSITORY/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
             --field state=in_progress \
@@ -291,7 +291,7 @@ jobs:
             --jq '.id')
           echo "deployment_id=${RESP}" >> $GITHUB_OUTPUT
 
-      - name: Set deployment status: in_progress
+      - name: "Set deployment status: in_progress"
         run: |
           gh api repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
             --field state=in_progress \
@@ -404,7 +404,7 @@ jobs:
             --jq '.[] | select(.ref == "${{ github.ref_name }}") | .id' | head -1)
           echo "deployment_id=${DEPLOY_ID}" >> $GITHUB_OUTPUT
 
-      - name: Set deployment status: success
+      - name: "Set deployment status: success"
         if: steps.smoke.outcome == 'success'
         run: |
           gh api repos/${{ github.repository }}/deployments/${{ steps.get-deploy-id.outputs.deployment_id }}/statuses \
@@ -412,7 +412,7 @@ jobs:
             --field environment_url=https://staging.example.com \
             --field description="Smoke test passed — /api/health returned 200"
 
-      - name: Set deployment status: failure
+      - name: "Set deployment status: failure"
         if: steps.smoke.outcome == 'failure'
         run: |
           gh api repos/${{ github.repository }}/deployments/${{ steps.get-deploy-id.outputs.deployment_id }}/statuses \
@@ -461,7 +461,7 @@ jobs:
             --jq '.[] | select(.ref == "${{ github.ref }}") | .id' | head -1)
           echo "deployment_id=${DEPLOY_ID}" >> $GITHUB_OUTPUT
 
-      - name: Set deployment status: success
+      - name: "Set deployment status: success"
         if: steps.smoke.outcome == 'success'
         run: |
           gh api repos/${{ github.repository }}/deployments/${{ steps.get-deploy-id.outputs.deployment_id }}/statuses \
@@ -469,7 +469,7 @@ jobs:
             --field environment_url=https://example.com \
             --field description="Smoke test passed — /api/health returned 200"
 
-      - name: Set deployment status: failure
+      - name: "Set deployment status: failure"
         if: steps.smoke.outcome == 'failure'
         run: |
           gh api repos/${{ github.repository }}/deployments/${{ steps.get-deploy-id.outputs.deployment_id }}/statuses \
